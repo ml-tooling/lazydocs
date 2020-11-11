@@ -31,9 +31,9 @@ Lazydocs makes it easy to generate beautiful markdown documentation for your Pyt
 
 ## Highlights
 
-- ⏱ Simple CLI to generate markdown docs in seconds.
-- 📋 Supports [Google-style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
-- 📚 Compatible with Github Markdown and MkDocs.
+- ⏱  Simple CLI to generate markdown docs in seconds.
+- 📋  Supports [Google-style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+- 📚  Compatible with Github Markdown and MkDocs.
 
 ## Getting Started
 
