@@ -1,0 +1,42 @@
+{
+	"name": "Build Environment",
+	"build": {
+		"dockerfile": "../.github/actions/build-environment/Dockerfile"
+	},
+
+	// Set *default* container specific settings.json values on container create.
+	"settings": {
+		"terminal.integrated.shell.linux": "/bin/bash"
+	},
+
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		 // General Development
+		 "esbenp.prettier-vscode",
+		 "42Crunch.vscode-openapi",
+     "EditorConfig.EditorConfig",
+     "mutantdino.resourcemonitor",
+		 // Collaboration
+		 "eamodio.gitlens",
+		 // Markdown
+		 "DavidAnson.vscode-markdownlint",
+		 // Python Development
+		 "ms-python.python",
+		 "ms-python.vscode-pylance"
+	]
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // :3000 for the React Webapp started via `yarn run`
+  // "forwardPorts": [ 3000 ]
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "uname -a",
+  // or postStartCommand
+
+	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust
+	// "runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
+
+	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+  // "remoteUser": "vscode"
+
+}

@@ -1,0 +1,111 @@
+name: release-pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of this release."
+        required: true
+  milestone:
+    types: [closed]
+
+env:
+  VERSION: ${{ secrets.VERSION }}
+  BRANCH_PREFIX: "release/v"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ github.event.milestone != null  &&  github.event.milestone.title != null }}
+        name: set-milestone-version
+        run: echo "::set-env name=VERSION::$(sed "s/^v//" <<< "${{ github.event.milestone.title }}")"
+      - if: ${{ github.event.inputs != null  &&  github.event.inputs.version != null }}
+        name: set-input-version
+        run: echo "::set-env name=VERSION::${{ github.event.inputs.version }}"
+      - name: set-github-token
+        run: echo "::set-env name=GITHUB_TOKEN::${{ secrets.GITHUB_TOKEN }}"
+      - if: ${{ env.GITHUB_TOKEN  &&  env.VERSION }}
+        name: create-release-branch
+        uses: peterjgrainger/action-create-branch@v2.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          branch: "${{ env.BRANCH_PREFIX }}${{ env.VERSION }}"
+      - if: ${{ ! env.GITHUB_TOKEN  }}
+        uses: actions/checkout@v2
+      - if: ${{ env.GITHUB_TOKEN }}
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ env.BRANCH_PREFIX }}${{ env.VERSION }}
+      - name: get-release-version
+        id: get-release-version
+        uses: ./.github/actions/get-release-version
+        with:
+          branch_prefix: ${{ env.BRANCH_PREFIX }}
+      - name: run-component-builds
+        uses: ./.github/actions/build-environment
+        with:
+          build_args: --make --force --version=${{ steps.get-release-version.outputs.release_version }}
+      - name: run-linting-and-style-checks
+        uses: ./.github/actions/build-environment
+        with:
+          build_args: --check --force --version=${{ steps.get-release-version.outputs.release_version }}
+      - name: run-component-tests
+        uses: ./.github/actions/build-environment
+        with:
+          build_args: --test --force --version=${{ steps.get-release-version.outputs.release_version }}
+      - name: release-components
+        uses: ./.github/actions/build-environment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          build_args: --release --force --version=${{ steps.get-release-version.outputs.release_version }}
+          pypi_token: ${{ secrets.PYPI_TOKEN }}
+          pypi_repository: ${{ secrets.PYPI_REPOSITORY }}
+          container_registry_url: ${{ secrets.CONTAINER_REGISTRY_URL }}
+          container_registry_username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
+          container_registry_password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
+      # Optional: do automatic changes to source code artefacts required for release
+      - if: ${{ env.GITHUB_TOKEN }}
+        name: update-repository
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          branch: ${{ env.BRANCH_PREFIX }}${{ steps.get-release-version.outputs.release_version }}
+          commit_user_name: Release Bot
+          commit_user_email: actions@github.com
+          commit_message: Apply automatic release changes
+      - if: ${{ env.GITHUB_TOKEN }}
+        name: create-release-tag
+        uses: tvdias/github-tagger@v0.0.2
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          tag: v${{ steps.get-release-version.outputs.release_version }}
+      - if: ${{ env.GITHUB_TOKEN }}
+        name: pull-request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ env.BRANCH_PREFIX }}${{ steps.get-release-version.outputs.release_version }}
+          destination_branch: "main"
+          pr_title: Finalize release for version ${{ steps.get-release-version.outputs.release_version }}
+          pr_body: "Automated pull request for release version ${{ steps.get-release-version.outputs.release_version }}"
+          pr_draft: false
+          pr_allow_empty: true
+          # only works if it exist: pr_milestone: v${{ steps.get-release-version.outputs.release_version }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      # Fix of release drafter to allow different events to trigger the release
+      - name: checkout-fixed-release-drafter
+        uses: actions/checkout@v2
+        with:
+          repository: ml-tooling/release-drafter
+          path: ./.github/actions/release-drafter
+      - if: ${{ env.GITHUB_TOKEN }}
+        name: create-release-draft
+        uses: ./.github/actions/release-drafter
+        with:
+          version: ${{ steps.get-release-version.outputs.release_version }}
+          tag: v${{ steps.get-release-version.outputs.release_version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Optional: upload release assets via actions/upload-release-asset@v1

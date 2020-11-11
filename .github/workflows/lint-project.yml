@@ -1,0 +1,59 @@
+name: lint-project
+
+on:
+  push:
+    branches-ignore: [main]
+    # Remove the line above to run when pushing to master
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  run-component-checks:
+    name: run-component-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: run-component-checks
+        uses: ./.github/actions/build-environment
+        with:
+          build_args: --check
+  run-superlinter:
+    name: run-superlinter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          # Full git history is needed to get a proper list of changed files within `super-linter`
+          fetch-depth: 0
+      - name: lint-code-base
+        uses: github/super-linter@v3
+        env:
+          # only validate new or edited files
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_DOCKERFILE: true
+          VALIDATE_DOCKERFILE_HADOLINT: true
+          VALIDATE_EDITORCONFIG: true
+          VALIDATE_HTML: true
+          VALIDATE_JAVA: true
+          VALIDATE_JSON: true
+          VALIDATE_KUBERNETES_KUBEVAL: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_OPENAPI: true
+          VALIDATE_PROTOBUF: true
+          VALIDATE_SHELL_SHFMT: true
+          VALIDATE_XML: true
+          VALIDATE_SQL: true
+          VALIDATE_YAML: true
+          DEFAULT_BRANCH: main
+          FILTER_REGEX_EXCLUDE: (.*\.vscode/.*)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTIONS_RUNNER_DEBUG: false
+  reuse-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: reuse-compliance-check
+        uses: fsfe/reuse-action@v1.1
