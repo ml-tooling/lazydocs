@@ -807,7 +807,7 @@ def generate_docs(
         remove_package_prefix=remove_package_prefix,
     )
 
-    pydocstyle_cmd = "pydocstyle --convention=google --add-ignore=D100,D101,D102,D103,D104,D105,D107,D202,D212"
+    pydocstyle_cmd = "pydocstyle --convention=google --add-ignore=D100,D101,D102,D103,D104,D105,D107,D202"
 
     for path in paths:
         if os.path.isdir(path):
