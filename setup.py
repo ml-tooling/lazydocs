@@ -114,7 +114,7 @@ setup(
     project_urls={
         "Changelog": URL + "/releases",
         "Issue Tracker": URL + "/issues",
-        "Documentation": URL,
+        "Documentation": URL + "#documentation",
         "Source": URL,
     },
     entry_points={
