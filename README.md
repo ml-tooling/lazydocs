@@ -88,10 +88,20 @@ Lazydocs tries to automatically
 This is 
 
 ```bash
-lazydocs --src-base-url=https://github.com/example/my-project/blob/main/ my_package
+lazydocs --src-base-url="https://github.com/example/my-project/blob/main/" my_package
 ```
 
 ### API Overview
+
+An API overview might be very useful in case your project has a large number modules, classes and functions. You can specify an `overview-file` with the lazydocs command to activate the generation of an API overview:
+
+```bash
+lazydocs --overview-file="README.md" my_package
+```
+
+The API Overview will be written as markdown to the specified file with sperated lists for all modules, classes, and functions of your project:
+
+<img style="width: 100%" src="./docs/images/api-overview.png"/>
 
 ### MKDocs Integration
 
