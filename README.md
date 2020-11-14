@@ -130,7 +130,7 @@ lazydocs \
        - ...
     ```
 
-Once you run or deploy your mkdocs documentation, you will see the API Reference section with all the API markdown documentation.
+Once you run or deploy your mkdocs documentation, you will see the API Reference section with all of your API markdown documentation.
 
 ### Docstyle Validation
 
