@@ -1,3 +1,5 @@
+"""Command line interface of lazydocs."""
+
 from typing import List, Optional
 
 import typer
@@ -20,9 +22,21 @@ def generate(
         None,
         help="The base github link. Should include branch name. All source links are generated with this prefix.",
     ),
+    overview_file: Optional[str] = typer.Option(
+        None,
+        help="Filename of overview file. If not provided, no overview file will be generated.",
+    ),
     remove_package_prefix: bool = typer.Option(
         True,
         help="If `True`, the package prefix will be removed from all functions and methods.",
+    ),
+    ignored_modules: List[str] = typer.Option(
+        [],
+        help="A list of modules that should be ignored.",
+    ),
+    watermark: bool = typer.Option(
+        True,
+        help="If `True`, add a watermark with a timestamp to bottom of the markdown files.",
     ),
     validate: bool = typer.Option(
         False,
@@ -36,6 +50,9 @@ def generate(
         output_path=output_path,
         src_base_url=github_link,
         remove_package_prefix=remove_package_prefix,
+        ignored_modules=ignored_modules,
+        overview_file=overview_file,
+        watermark=watermark,
         validate=validate,
     )
 

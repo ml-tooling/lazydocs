@@ -20,7 +20,7 @@ def main(args: Dict[str, Union[bool, str]]):
     version = args[build_utils.FLAG_VERSION]
     if args[build_utils.FLAG_VERSION]:
         # Replace version in about.py
-        with open(os.path.join(HERE, f"src/{MAIN_PACKAGE}/about.py"), "r+") as f:
+        with open(os.path.join(HERE, f"src/{MAIN_PACKAGE}/_about.py"), "r+") as f:
             data = f.read()
             f.seek(0)
             f.write(re.sub(r"__version__ = \".+\"", f'__version__ = "{version}"', data))
