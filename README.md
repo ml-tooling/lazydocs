@@ -20,12 +20,11 @@
   <a href="#features">Features</a> •
   <a href="#documentation">Documentation</a> •
   <a href="#support--feedback">Support</a> •
-  <a href="https://github.com/ml-tooling/lazydocs/issues/new?labels=bug&template=01_bug-report.md">Report a Bug</a> •
   <a href="#contribution">Contribution</a> •
   <a href="https://github.com/ml-tooling/lazydocs/releases">Changelog</a>
 </p>
 
-Lazydocs makes it easy to generate beautiful markdown documentation for your Python API. It provides a simple command-line interface as well as a Python API to get full-fledged API documentation within seconds based on all of the [Google-style docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) in your code. This markdown documentation can be pushed to Github or integrated into your MkDocs site.
+Lazydocs makes it easy to generate beautiful markdown documentation for your Python API (see this [example](./docs)). It provides a simple command-line interface as well as a Python API to get full-fledged API documentation within seconds based on all of the [Google-style docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) in your code. This markdown documentation can be pushed to Github or integrated into your MkDocs site.
 
 ## Highlights
 
@@ -35,11 +34,31 @@ Lazydocs makes it easy to generate beautiful markdown documentation for your Pyt
 
 ## Getting Started
 
-_This section should contain the simplest and most basic way to run and use the project, preferably with one command._
+### Installation
+
+> _Requirements: Python 3.6+._
+
+To install lazydocs, simply execute:
 
 ```bash
-lazydocs generate <path/to/package/or/module>
+pip install lazydocs
 ```
+
+### Usage
+
+To generate Markdown-based API documentation for your Python project, simply execute:
+
+```bash
+lazydocs path/to/your/package
+```
+
+The path can be either a python package (folder) or a specific script. You can also specify one or multiple module, classe or function imports:
+
+```bash
+lazydocs my_package.AwesomeClass
+```
+
+With the default configuration, the Markdown documentation will be generated inside a `./docs` in your working directory. You can find additional configuration options in the documentation section.
 
 ## Support & Feedback
 
@@ -55,11 +74,76 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
 
 ## Features
 
-_Use this section for advertising the most important features and advantages of the project. Also, add screenshots or examples to showcase important features. The main purpose of this section is marketing._
+<p align="center">
+  <a href="#source-code-linking">Source Code Linking</a> •
+  <a href="#api-overview">API Overview</a> •
+  <a href="#mkdocs-integration">MKDocs Integration</a> •
+  <a href="#docstyle-validation">Docstyle Validation</a>
+</p>
+
+### Source Code Linking
+
+### API Overview
+
+### MKDocs Integration
+
+### Docstyle Validation
+
+### Console Output
+
 
 ## Documentation
 
-_Either put the documentation here or use a deployed documentation site via mkdocs and link to the documentation._
+### CLI Interface
+
+<!-- generated via typer-cli: typer src/lazydocs/_cli.py utils docs -->
+
+```console
+laydocs [OPTIONS] PATHS...
+```
+
+**Arguments**:
+
+* `PATHS...`: Selected paths or imports for markdown generation.  [required]
+
+**Options**:
+
+* `--output-path TEXT`: The output path for the creation of the markdown files. Set this to `stdout` to print all markdown to stdout.  [default: ./docs/]
+* `--src-base-url TEXT`: The base repo link used as prefix for all source links. Should also include the branch name.
+* `--overview-file TEXT`: Filename of overview file. If not provided, no API overview file will be generated.
+* `--remove-package-prefix / --no-remove-package-prefix`: If `True`, the package prefix will be removed from all functions and methods.  [default: True]
+* `--ignored-modules TEXT`: A list of modules that should be ignored.  [default: ]
+* `--watermark / --no-watermark`: If `True`, add a watermark with a timestamp to bottom of the markdown files.  [default: True]
+* `--validate / --no-validate`: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.  [default: False]
+* `--install-completion`: Install completion for the current shell.
+* `--show-completion`: Show completion for the current shell, to copy it or customize the installation.
+* `--help`: Show this message and exit.
+
+### Programmatic API
+
+Lazydocs can also be used and integrated via its [Python API](https://github.com/ml-tooling/lazydocs/tree/main/docs). For example, to generate markdown for an arbitrary Python import or object:
+
+```python
+from lazydocs import MarkdownGenerator
+
+generator = MarkdownGenerator()
+
+# Select a module to generate markdown documentation
+# Here we use the generation module itself as an example
+my_module = generation
+markdown_docs = generator.import2md(my_module)
+```
+
+To programmatically generate all markdown documentation files you can use [`generate_docs`](https://github.com/ml-tooling/lazydocs/blob/main/docs/lazydocs.generator.md#function-generate_docs):
+
+```python
+from lazydocs import generate_docs
+
+# The parameters of this function correspond to the CLI options
+generate_docs(["my_module"], output_path="./docs")
+```
+
+The full Python API documentation can be found [here](https://github.com/ml-tooling/lazydocs/tree/main/docs) _(generated via lazydocs)_.
 
 ## Contributors
 
