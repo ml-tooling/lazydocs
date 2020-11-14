@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import typer
 
-import lazydocs.generation
+from lazydocs import generate_docs
 
 app = typer.Typer()
 
@@ -45,7 +45,7 @@ def generate(
 ) -> None:
     """Generates markdown documentation for your Python project based on Google-style docstrings."""
 
-    lazydocs.generator.generate_docs(
+    generate_docs(
         paths=paths,
         output_path=output_path,
         src_base_url=src_base_url,
