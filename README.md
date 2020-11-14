@@ -38,8 +38,6 @@ Lazydocs makes it easy to generate beautiful markdown documentation for your Pyt
 
 > _Requirements: Python 3.6+._
 
-To install lazydocs, simply execute:
-
 ```bash
 pip install lazydocs
 ```
@@ -58,7 +56,7 @@ The path can be either a python package (folder) or a specific script. You can a
 lazydocs my_package.AwesomeClass
 ```
 
-With the default configuration, the Markdown documentation will be generated inside a `./docs` in your working directory. You can find additional configuration options in the documentation section.
+With the default configuration, the Markdown documentation will be generated inside the `./docs` folder in your working directory. You can find additional configuration options in the [documentation section](#cli-interface).
 
 ## Support & Feedback
 
@@ -83,14 +81,37 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
 
 ### Source Code Linking
 
+Lazydocs tries to automatically 
+
+
+
+This is 
+
+```bash
+lazydocs --src-base-url=https://github.com/example/my-project/blob/main/ my_package
+```
+
 ### API Overview
 
 ### MKDocs Integration
 
 ### Docstyle Validation
 
+Lazydocs can only parse valid Google-style docstring. To prevent the generation of invalid markdown documentation, you can use the `validate` flag:
+
+```bash
+layzdocs --validate my_package
+```
+
+This will run [pydocstyle](https://github.com/PyCQA/pydocstyle) on your docstring and cancel the generation if an issue is found.
+
 ### Console Output
 
+To get the markdown documentation as console output instead of the file generation, specify `stdout` as the `output-path`:
+
+```bash
+layzdocs --output-path=stdout my_package
+```
 
 ## Documentation
 
@@ -98,7 +119,7 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
 
 <!-- generated via typer-cli: typer src/lazydocs/_cli.py utils docs -->
 
-```console
+```bash
 laydocs [OPTIONS] PATHS...
 ```
 
