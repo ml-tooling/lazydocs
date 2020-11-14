@@ -81,6 +81,15 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install web development tools
+RUN apt-get update \
+    && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g yarn@1 \
+    # Clean up
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install documentation dependencies
 RUN pip install \
         mkdocs==1.* \
@@ -88,6 +97,7 @@ RUN pip install \
         pymdown-extensions==8.* \
         pygments==2.* \
         markdown-include==0.6.* \
+        mkdocs-awesome-pages-plugin==2.* \
         mkdocs-markdownextradata-plugin==0.1.* \
     && npm install -g markdownlint@^0.21.1 markdownlint-cli@^0.24.0
 
