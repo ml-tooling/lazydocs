@@ -1,13 +1,13 @@
 
-<a href="../src/lazydocs/generator.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-# <kbd>module</kbd> `lazydocs.generator`
+# <kbd>module</kbd> `lazydocs.generation`
 Main module for markdown generation.
 
 
 ---
 
-<a href="../src/lazydocs/generator.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `to_md_file`
 
@@ -37,7 +37,7 @@ Creates an API docs file from a provided text.
 
 ---
 
-<a href="../src/lazydocs/generator.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_docs`
 
@@ -82,14 +82,14 @@ Generates markdown documentation for provided paths based on Google-style docstr
 
 ---
 
-<a href="../src/lazydocs/generator.py#L247"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L247"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `MarkdownAPIGenerator`
+## <kbd>class</kbd> `MarkdownGenerator`
 Markdown generator class.
 
 
 
-<a href="../src/lazydocs/generator.py#L250"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L250"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -118,7 +118,7 @@ Initializes the markdown API generator.
 
 ---
 
-<a href="../src/lazydocs/generator.py#L514"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L514"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `class2md`
 
@@ -144,7 +144,7 @@ Takes a class and creates markdown text to document its methods and variables.
 
 ---
 
-<a href="../src/lazydocs/generator.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `doc2md`
 
@@ -168,7 +168,7 @@ Parse docstring (with getdoc) according to Google-style formatting and convert t
 
 ---
 
-<a href="../src/lazydocs/generator.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `func2md`
 
@@ -196,7 +196,7 @@ Takes a function (or method) and generates markdown docs.
 
 ---
 
-<a href="../src/lazydocs/generator.py#L688"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L688"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `import2md`
 
@@ -222,7 +222,7 @@ Generates markdown documentation for a selected object/import.
 
 ---
 
-<a href="../src/lazydocs/generator.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `module2md`
 
@@ -248,7 +248,7 @@ Takes an imported module object and create a Markdown string containing function
 
 ---
 
-<a href="../src/lazydocs/generator.py#L708"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/lazydocs/generation.py#L708"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `overview2md`
 
@@ -263,4 +263,4 @@ Generates a documentation overview file based on the generated docs.
 
 ---
 
-_This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs) on 14, Nov 2020._
+_This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs) on 14 Nov 2020._
