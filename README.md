@@ -76,20 +76,21 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
   <a href="#source-code-linking">Source Code Linking</a> •
   <a href="#api-overview">API Overview</a> •
   <a href="#mkdocs-integration">MKDocs Integration</a> •
-  <a href="#docstyle-validation">Docstyle Validation</a>
+  <a href="#docstyle-validation">Docstyle Validation</a> •
+  <a href="#console-output">Console Output</a>
 </p>
 
 ### Source Code Linking
 
-Lazydocs tries to automatically 
+<img style="width: 100%" src="./docs/images/source-linking.png"/>
 
-
-
-This is 
+Lazydocs is capable to insert a badge on the right side of every module, class, method or function with a link the correct source-code file and line number. The default configuration will create relative paths to navigate within the Github Repo. This is useful if the documentation is hosted within the same repository as the source-code. If, the documentation is hosted outside of the Github Repository, it is recommended to set the `src-base-url`:
 
 ```bash
 lazydocs --src-base-url="https://github.com/example/my-project/blob/main/" my_package
 ```
+
+The `src-base-url` is used as a prefix for all source-code linkings in the documentation.
 
 ### API Overview
 
