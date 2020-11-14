@@ -15,7 +15,7 @@ EMAIL = "team@mltooling.org"
 AUTHOR = "ML Tooling Team"
 LICENSE = "MIT"
 REQUIRES_PYTHON = ">=3.6"
-VERSION = None  # Only set version if you like to overwrite the version in about.py
+VERSION = None  # Only set version if you like to overwrite the version in _about.py
 
 # Please define the requirements within the requirements.txt
 
@@ -57,10 +57,10 @@ dev_requirements, _ = load_requirements(file_name="requirements_dev.txt")
 with open(os.path.join(PWD, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-# Load the package's about.py module as a dictionary.
+# Load the package's _about.py module as a dictionary.
 about = {}  # type: dict
 if not VERSION:
-    with open(os.path.join(PWD, os.path.join("src", MAIN_PACKAGE), "about.py")) as f:  # type: ignore
+    with open(os.path.join(PWD, os.path.join("src", MAIN_PACKAGE), "_about.py")) as f:  # type: ignore
         # todo: extract version via regex? re.findall("__version__ = '([\d.\w]+)'", f.read())[0]
         exec(f.read(), about)
         VERSION = about["__version__"]

@@ -186,7 +186,7 @@ def to_md_file(
 
     if watermark:
         string += _WATERMARK_TEMPLATE.format(
-            date=datetime.date.today().strftime("%d, %b %Y")
+            date=datetime.date.today().strftime("%d %b %Y")
         )
 
     with open(os.path.join(out_path, md_file), "w") as f:
@@ -244,7 +244,7 @@ def _get_src_root_path(obj: Any) -> str:
     return module.__file__.split(root_package)[0] + root_package
 
 
-class MarkdownAPIGenerator(object):
+class MarkdownGenerator(object):
     """Markdown generator class."""
 
     def __init__(
@@ -800,8 +800,8 @@ def generate_docs(
             # Ignore all exceptions
             pass
 
-    # Initilize Markdown Generator
-    generator = MarkdownAPIGenerator(
+    # Initialize Markdown Generator
+    generator = MarkdownGenerator(
         src_root_path=src_root_path,
         src_base_url=src_base_url,
         remove_package_prefix=remove_package_prefix,
