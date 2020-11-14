@@ -8,6 +8,7 @@ from typing import Dict, Union
 from universal_build import build_utils
 
 MAIN_PACKAGE = "lazydocs"
+GITHUB_URL = "https://github.com/ml-tooling/lazydocs"
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
@@ -71,16 +72,24 @@ def _make(args: Dict[str, Union[bool, str]]):
     # Check the archives with twine
     build_utils.run("twine check dist/*", exit_on_error=True)
 
+    # Install library
+    build_utils.run("pip install -e .[dev]", exit_on_error=True)
+    # Create API documentation via lazydocs
+    build_utils.run(
+        f"lazydocs --overview-file=README.md --src-base-url={GITHUB_URL}/blob/main {MAIN_PACKAGE}",
+        exit_on_error=True,
+    )
+
 
 def _test(args: Dict[str, Union[bool, str]]):
     """Run all tests."""
     # Install library
     build_utils.run("pip install -e .[dev]", exit_on_error=True)
     # Execute tests with coverage check
-    build_utils.run(
-        f"pytest --cov={MAIN_PACKAGE} --cov-report=xml --cov-report term --cov-report=html tests",
-        exit_on_error=True,
-    )
+    # build_utils.run(
+    #     f"pytest --cov={MAIN_PACKAGE} --cov-report=xml --cov-report term --cov-report=html tests",
+    #     exit_on_error=True,
+    # )
 
 
 def _release(args: Dict[str, Union[bool, str]]):
