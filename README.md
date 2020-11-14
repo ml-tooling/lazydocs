@@ -17,12 +17,10 @@
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> •
-  <a href="#features">Features & Screenshots</a> •
+  <a href="#features">Features</a> •
   <a href="#documentation">Documentation</a> •
   <a href="#support--feedback">Support</a> •
   <a href="https://github.com/ml-tooling/lazydocs/issues/new?labels=bug&template=01_bug-report.md">Report a Bug</a> •
-  <a href="#faq">FAQ</a> •
-  <a href="#known-issues">Known Issues</a> •
   <a href="#contribution">Contribution</a> •
   <a href="https://github.com/ml-tooling/lazydocs/releases">Changelog</a>
 </p>
@@ -31,9 +29,9 @@ Lazydocs makes it easy to generate beautiful markdown documentation for your Pyt
 
 ## Highlights
 
-- ⏱&emsp;Simple CLI to generate markdown docs in seconds.
-- 📋&emsp;Supports [Google-style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
-- 📚&emsp;Compatible with Github Markdown and MkDocs.
+- ⏱&nbsp; Simple CLI to generate markdown docs in seconds.
+- 📋&nbsp; Supports [Google-style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+- 📚&nbsp; Compatible with Github Markdown and MkDocs.
 
 ## Getting Started
 
@@ -49,11 +47,11 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
 
 | Type                     | Channel                                              |
 | ------------------------ | ------------------------------------------------------ |
-| 🚨&emsp;**Bug Reports**       | <a href="https://github.com/ml-tooling/lazydocs/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3Abug+sort%3Areactions-%2B1-desc+" title="Open Bug Report"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs/bug.svg?label=bug"></a>                                 |
-| 🎁&emsp;**Feature Requests**  | <a href="https://github.com/ml-tooling/lazydocs/issues?q=is%3Aopen+is%3Aissue+label%3Afeature+sort%3Areactions-%2B1-desc" title="Open Feature Request"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs/feature.svg?label=feature"></a>                                 |
-| 👩‍💻&emsp;**Usage Questions**   |  _tbd_ |
-| 🗯&emsp;**General Discussion** | _tbd_ |
-| ❓&emsp;**Other Requests** | <a href="mailto:team@mltooling.org" title="Email ML Tooling Team"><img src="https://img.shields.io/badge/email-ML Tooling-green?logo=mail.ru&style=flat-square&logoColor=white"></a> |
+| 🚨&nbsp; **Bug Reports**       | <a href="https://github.com/ml-tooling/lazydocs/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3Abug+sort%3Areactions-%2B1-desc+" title="Open Bug Report"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs/bug.svg?label=bug"></a>                                 |
+| 🎁&nbsp; **Feature Requests**  | <a href="https://github.com/ml-tooling/lazydocs/issues?q=is%3Aopen+is%3Aissue+label%3Afeature+sort%3Areactions-%2B1-desc" title="Open Feature Request"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs/feature.svg?label=feature"></a>                                 |
+| 👩‍💻&nbsp; **Usage Questions**   |  _tbd_ |
+| 🗯&nbsp; **General Discussion** | _tbd_ |
+| ❓&nbsp; **Other Requests** | <a href="mailto:team@mltooling.org" title="Email ML Tooling Team"><img src="https://img.shields.io/badge/email-ML Tooling-green?logo=mail.ru&style=flat-square&logoColor=white"></a> |
 
 ## Features
 
@@ -62,18 +60,6 @@ _Use this section for advertising the most important features and advantages of 
 ## Documentation
 
 _Either put the documentation here or use a deployed documentation site via mkdocs and link to the documentation._
-
-## FAQ
-
-<details>
-<summary><b>This is the example description of an faq item</b> (click to expand...)</summary>
-</details>
-
-## Known Issues
-
-<details>
-<summary><b>This is the example description of a known issue</b> (click to expand...)</summary>
-</details>
 
 ## Contributors
 
