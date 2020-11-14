@@ -77,14 +77,14 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
   <a href="#api-overview">API Overview</a> •
   <a href="#mkdocs-integration">MKDocs Integration</a> •
   <a href="#docstyle-validation">Docstyle Validation</a> •
-  <a href="#console-output">Console Output</a>
+  <a href="#print-to-console">Print to Console</a>
 </p>
 
 ### Source Code Linking
 
 <img style="width: 100%" src="./docs/images/source-linking.png"/>
 
-Lazydocs is capable to insert a badge on the right side of every module, class, method or function with a link the correct source-code file and line number. The default configuration will create relative paths to navigate within the Github Repo. This is useful if the documentation is hosted within the same repository as the source-code. If, the documentation is hosted outside of the Github Repository, it is recommended to set the `src-base-url`:
+Lazydocs is capable to insert a badge on the right side of every module, class, method or function with a link the correct source-code file and line number. The default configuration will create relative paths to navigate within the Github Repo. This is useful if the documentation is hosted within the same repository as the source-code. If, the documentation is hosted outside of the Github repository, it is recommended to set the `src-base-url`:
 
 ```bash
 lazydocs --src-base-url="https://github.com/example/my-project/blob/main/" my_package
@@ -102,9 +102,11 @@ An API overview might be very useful in case your project has a large number mod
 lazydocs --overview-file="README.md" my_package
 ```
 
-The API overview will be written as markdown to the specified file with seperated lists for all modules, classes, and functions of your project:
+The API overview will be written as markdown to the specified file with separated lists for all modules, classes, and functions of your project:
 
 ### MKDocs Integration
+
+
 
 ### Docstyle Validation
 
@@ -116,7 +118,7 @@ layzdocs --validate my_package
 
 This will run [pydocstyle](https://github.com/PyCQA/pydocstyle) on your docstring and cancel the generation if an issue is found.
 
-### Console Output
+### Print to Console
 
 To get the markdown documentation as console output instead of the file generation, specify `stdout` as the `output-path`:
 
