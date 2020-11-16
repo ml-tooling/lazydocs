@@ -445,7 +445,9 @@ class MarkdownGenerator(object):
 
         section = "#" * depth
         funcname = func.__name__
-        modname = func.__module__
+        modname = None
+        if hasattr(func, "__module__"):
+            modname = func.__module__
 
         escfuncname = (
             "%s" % funcname if funcname.startswith("_") else funcname
@@ -713,7 +715,11 @@ class MarkdownGenerator(object):
             filter(lambda d: d["type"] == "module", self.generated_objects)
         ):
             full_name = obj["full_name"]
-            link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
+            if "module" in obj:
+                link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
+            else:
+                link = "#unknown"
+
             description = obj["description"]
             entries_md += f"\n- [`{full_name}`]({link})"
             if description:
