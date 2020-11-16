@@ -16,4 +16,4 @@
 
 ---
 
-_This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs) on 16 Nov 2020._
+_This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs)._
