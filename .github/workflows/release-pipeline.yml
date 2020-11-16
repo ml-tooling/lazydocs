@@ -39,29 +39,24 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ env.BRANCH_PREFIX }}${{ env.VERSION }}
-      - name: get-release-version
-        id: get-release-version
-        uses: ./.github/actions/get-release-version
-        with:
-          branch_prefix: ${{ env.BRANCH_PREFIX }}
       - name: run-component-builds
         uses: ./.github/actions/build-environment
         with:
-          build_args: --make --force --version=${{ steps.get-release-version.outputs.release_version }}
+          build_args: --make --force --version=${{ env.VERSION  }}
       - name: run-linting-and-style-checks
         uses: ./.github/actions/build-environment
         with:
-          build_args: --check --force --version=${{ steps.get-release-version.outputs.release_version }}
+          build_args: --check --force --version=${{ env.VERSION  }}
       - name: run-component-tests
         uses: ./.github/actions/build-environment
         with:
-          build_args: --test --force --version=${{ steps.get-release-version.outputs.release_version }}
+          build_args: --test --force --version=${{ env.VERSION  }}
       - name: release-components
         uses: ./.github/actions/build-environment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          build_args: --release --force --version=${{ steps.get-release-version.outputs.release_version }}
+          build_args: --release --force --version=${{ env.VERSION  }}
           pypi_token: ${{ secrets.PYPI_TOKEN }}
           pypi_repository: ${{ secrets.PYPI_REPOSITORY }}
           container_registry_url: ${{ secrets.CONTAINER_REGISTRY_URL }}
@@ -72,7 +67,7 @@ jobs:
         name: update-repository
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          branch: ${{ env.BRANCH_PREFIX }}${{ steps.get-release-version.outputs.release_version }}
+          branch: ${{ env.BRANCH_PREFIX }}${{ env.VERSION  }}
           commit_user_name: Release Bot
           commit_user_email: actions@github.com
           commit_message: Apply automatic release changes
@@ -81,18 +76,18 @@ jobs:
         uses: tvdias/github-tagger@v0.0.2
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          tag: v${{ steps.get-release-version.outputs.release_version }}
+          tag: v${{ env.VERSION  }}
       - if: ${{ env.GITHUB_TOKEN }}
         name: pull-request
         uses: repo-sync/pull-request@v2
         with:
-          source_branch: ${{ env.BRANCH_PREFIX }}${{ steps.get-release-version.outputs.release_version }}
+          source_branch: ${{ env.BRANCH_PREFIX }}${{ env.VERSION  }}
           destination_branch: "main"
-          pr_title: Finalize release for version ${{ steps.get-release-version.outputs.release_version }}
-          pr_body: "Automated pull request for release version ${{ steps.get-release-version.outputs.release_version }}"
+          pr_title: Finalize release for version ${{ env.VERSION  }}
+          pr_body: "Automated pull request for release version ${{ env.VERSION  }}"
           pr_draft: false
           pr_allow_empty: true
-          # only works if it exist: pr_milestone: v${{ steps.get-release-version.outputs.release_version }}
+          # only works if it exist: pr_milestone: v${{ env.VERSION  }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
       # Fix of release drafter to allow different events to trigger the release
       - name: checkout-fixed-release-drafter
@@ -104,8 +99,8 @@ jobs:
         name: create-release-draft
         uses: ./.github/actions/release-drafter
         with:
-          version: ${{ steps.get-release-version.outputs.release_version }}
-          tag: v${{ steps.get-release-version.outputs.release_version }}
+          version: ${{ env.VERSION }}
+          tag: v${{ env.VERSION  }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Optional: upload release assets via actions/upload-release-asset@v1
