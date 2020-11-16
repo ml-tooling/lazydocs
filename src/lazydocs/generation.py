@@ -75,7 +75,7 @@ _OVERVIEW_TEMPLATE = """
 _WATERMARK_TEMPLATE = """
 ---
 
-_This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs) on {date}._
+_This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs)._
 """
 
 
