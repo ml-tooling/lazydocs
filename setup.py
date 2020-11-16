@@ -51,7 +51,7 @@ if dependency_links:
         "Cannot install some dependencies. "
         "Dependency links are currently not supported: " + str(dependency_links)
     )
-dev_requirements, _ = load_requirements(file_name="requirements_dev.txt")
+dev_requirements, _ = load_requirements(file_name="requirements-dev.txt")
 
 # Import the README and use it as the long-description.
 with open(os.path.join(PWD, "README.md"), encoding="utf-8") as f:
