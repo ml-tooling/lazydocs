@@ -19,7 +19,8 @@ def main(args: Dict[str, Union[bool, str]]):
     os.chdir(HERE)
 
     version = args[build_utils.FLAG_VERSION]
-    if args[build_utils.FLAG_VERSION]:
+
+    if version:
         # Replace version in about.py
         with open(os.path.join(HERE, f"src/{MAIN_PACKAGE}/_about.py"), "r+") as f:
             data = f.read()
