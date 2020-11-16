@@ -187,9 +187,7 @@ from lazydocs import MarkdownGenerator
 
 generator = MarkdownGenerator()
 
-# Select a module to generate markdown documentation
-# Here we use the generation module itself as an example
-my_module = generation
+# Select a module (e.g. my_module) to generate markdown documentation
 markdown_docs = generator.import2md(my_module)
 ```
 
