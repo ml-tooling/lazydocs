@@ -11,9 +11,9 @@
     <a href="https://pypi.org/project/lazydocs/" title="PyPi Version"><img src="https://img.shields.io/pypi/v/lazydocs?color=green&style=flat"></a>
     <a href="https://github.com/ml-tooling/lazydocs/commits/" title="Last Commit"><img src="https://img.shields.io/github/last-commit/ml-tooling/lazydocs?style=flat"></a>
     <a href="https://github.com/ml-tooling/lazydocs/issues" title="Open Issues"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs?style=flat"></a>
-    <a href="https://github.com/ml-tooling/lazydocs/blob/main/LICENSE" title="Project License"><img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
-    <a href="https://api.reuse.software/info/github.com/ml-tooling/lazydocs" title="REUSE status"><img src="https://api.reuse.software/badge/github.com/ml-tooling/lazydocs"></a>
+    <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a>
     <a href="https://github.com/ml-tooling/lazydocs/actions?query=workflow%3Abuild-pipeline" title="Build status"><img src="https://github.com/ml-tooling/lazydocs/workflows/build-pipeline/badge.svg"></a>
+    <a href="https://github.com/ml-tooling/lazydocs/blob/main/LICENSE" title="Project License"><img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
 </p>
 
 <p align="center">
@@ -67,8 +67,8 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
 | ------------------------ | ------------------------------------------------------ |
 | 🚨&nbsp; **Bug Reports**       | <a href="https://github.com/ml-tooling/lazydocs/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3Abug+sort%3Areactions-%2B1-desc+" title="Open Bug Report"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs/bug.svg?label=bug"></a>                                 |
 | 🎁&nbsp; **Feature Requests**  | <a href="https://github.com/ml-tooling/lazydocs/issues?q=is%3Aopen+is%3Aissue+label%3Afeature+sort%3Areactions-%2B1-desc" title="Open Feature Request"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs/feature.svg?label=feature"></a>                                 |
-| 👩‍💻&nbsp; **Usage Questions**   |  _tbd_ |
-| 🗯&nbsp; **General Discussion** | _tbd_ |
+| 👩‍💻&nbsp; **Usage Questions**   |   <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a> |
+| 🗯&nbsp; **General Discussion** | <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a>|
 | ❓&nbsp; **Other Requests** | <a href="mailto:team@mltooling.org" title="Email ML Tooling Team"><img src="https://img.shields.io/badge/email-ML Tooling-green?logo=mail.ru&style=flat-square&logoColor=white"></a> |
 
 ## Features
