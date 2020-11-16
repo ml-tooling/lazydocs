@@ -50,13 +50,13 @@ To simplify the process of building this project from scratch, we provide build 
 Execute this command in the project root folder to compile, assemble, and package all project components:
 
 ```bash
-act -s BUILD_ARGS="--make" -j build
+act -b -s BUILD_ARGS="--make" -j build
 ```
 
 You can also run the build only for a specific (sub-)component by providing the path to the component folder, as shown below:
 
 ```bash
-act -s BUILD_ARGS="--make" -s WORKING_DIRECTORY="./docs" -j build
+act -b -s BUILD_ARGS="--make" -s WORKING_DIRECTORY="./docs" -j build
 ```
 
 #### Run linting & style checks
@@ -64,7 +64,7 @@ act -s BUILD_ARGS="--make" -s WORKING_DIRECTORY="./docs" -j build
 To run all relevant linting and code style checks for all components, execute:
 
 ```bash
-act -s BUILD_ARGS="--check" -j build
+act -b -s BUILD_ARGS="--check" -j build
 ```
 
 #### Run integration & unit tests
@@ -72,27 +72,27 @@ act -s BUILD_ARGS="--check" -j build
 Once all the project artifacts are build, you can execute this command in the project root folder to run the integration & unit tests for all components:
 
 ```bash
-act -s BUILD_ARGS="--test" -j build
+act -b -s BUILD_ARGS="--test" -j build
 ```
 
 It is also possible to combine multiple steps into one command:
 
 ```bash
-act -s BUILD_ARGS="--check --make --test" -j build
+act -b -s BUILD_ARGS="--check --make --test" -j build
 ```
 
 The `--check --make --test` steps are configured as default. If you call the job without `BUILD_ARGS` the build and test steps will be executed:
 
 ```bash
-act -j build
+act -b -j build
 ```
 
 #### Release a new version
 
-To release a new version and publish all relevant artifacts to respective registries (e.g. Docker image to DockerHub), you need to first create a git version tag based on [Semantic Versioning](https://semver.org/) standard and, subsequently, run the release job:
+To release a new version and publish all relevant artifacts to respective registries (e.g. Docker image to DockerHub), run the release job with a valid version based on [Semantic Versioning](https://semver.org/) standard:
 
 ```bash
-git tag vMAJOR.MINOR.PATCH && act -j release
+act -b -s VERSION="<MAJOR.MINOR.PATCH>" -j release
 ```
 
 ### Commit messages guidelines
