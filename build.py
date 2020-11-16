@@ -57,7 +57,7 @@ def _check(args: Dict[str, Union[bool, str]]):
 
 def _make(args: Dict[str, Union[bool, str]]):
     """Build the library."""
-    # Todo: Generate documentation
+
     try:
         # Ensure there are no old builds
         rmtree(os.path.join(HERE, "dist"))
