@@ -557,9 +557,12 @@ class MarkdownGenerator(object):
             if not name.startswith("_") and type(obj) == property:
                 comments = self.doc2md(obj) or inspect.getcomments(obj)
                 comments = "\n %s" % comments if comments else ""
+                property_name = f"{clsname}.{name}"
+                if self.remove_package_prefix:
+                    property_name = name
                 variables.append(
-                    "\n%s <kbd>property</kbd> %s.%s%s\n"
-                    % (subsection, clsname, name, comments)
+                    "\n%s <kbd>property</kbd> %s%s\n"
+                    % (subsection, property_name, comments)
                 )
 
         handlers = []
@@ -567,8 +570,12 @@ class MarkdownGenerator(object):
             if not name.startswith("_") and hasattr(
                 obj, "__module__"
             ):  # and obj.__module__ == modname:
+                handler_name = f"{clsname}.{name}"
+                if self.remove_package_prefix:
+                    handler_name = name
+
                 handlers.append(
-                    "\n%s <kbd>handler</kbd> %s.%s\n" % (subsection, clsname, name)
+                    "\n%s <kbd>handler</kbd> %s\n" % (subsection, handler_name)
                 )
 
         methods = []
