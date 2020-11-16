@@ -31,6 +31,10 @@ _SOURCE_BADGE_TEMPLATE = """
 <a href="{path}"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 """
 
+_SEPARATOR = """
+---
+"""
+
 _FUNC_TEMPLATE = """
 {section} <kbd>{func_type}</kbd> `{header}`
 
@@ -73,6 +77,7 @@ _OVERVIEW_TEMPLATE = """
 """
 
 _WATERMARK_TEMPLATE = """
+
 ---
 
 _This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs)._
@@ -358,11 +363,14 @@ class MarkdownGenerator(object):
         out = []
         arg_list = False
         literal_block = False
+        md_code_snippet = False
         quote_block = False
 
         for line in doc.split("\n"):
             indent = len(line) - len(line.lstrip())
-            line = line.lstrip()
+            if not md_code_snippet and not literal_block:
+                line = line.lstrip()
+
             if line.startswith(">>>"):
                 # support for doctest
                 line = line.replace(">>>", "```") + "```"
@@ -378,23 +386,32 @@ class MarkdownGenerator(object):
                 if quote_block:
                     quote_block = False
 
-                if _RE_QUOTE_TEXT.match(line):
-                    quote_block = True
-
                 if literal_block:
                     # break literal block
                     out.append("```\n")
                     literal_block = False
 
-                out.append("\n**{}**\n".format(line.strip()))
+                out.append("\n\n**{}**\n".format(line.strip()))
 
                 arg_list = bool(_RE_BLOCKSTART_LIST.match(line))
+
+                if _RE_QUOTE_TEXT.match(line):
+                    quote_block = True
+                    out.append("\n>")
+            elif line.strip().startswith("```"):
+                # Code snippet is used
+                if md_code_snippet:
+                    md_code_snippet = False
+                else:
+                    md_code_snippet = True
+
+                out.append(line)
             elif line.strip().endswith("::"):
                 # Literal Block Support: https://docutils.sourceforge.io/docs/user/rst/quickref.html#literal-blocks
                 literal_block = True
                 out.append(line.replace("::", ":\n```"))
             elif quote_block:
-                out.append("> {}".format(line.strip()))
+                out.append(line.strip())
             elif indent > blockindent:
                 if arg_list and not literal_block and _RE_TYPED_ARGSTART.match(line):
                     # start of new argument
@@ -427,7 +444,14 @@ class MarkdownGenerator(object):
                     literal_block = False
                 out.append(line)
 
-            out.append("\n")
+            if md_code_snippet:
+                out.append("\n")
+            elif not line and not quote_block:
+                out.append("\n\n")
+            elif not line and quote_block:
+                out.append("\n>")
+            else:
+                out.append(" ")
 
         return "".join(out)
 
@@ -556,7 +580,7 @@ class MarkdownGenerator(object):
         ):
             if not name.startswith("_") and type(obj) == property:
                 comments = self.doc2md(obj) or inspect.getcomments(obj)
-                comments = "\n %s" % comments if comments else ""
+                comments = "\n\n%s" % comments if comments else ""
                 property_name = f"{clsname}.{name}"
                 if self.remove_package_prefix:
                     property_name = name
@@ -589,7 +613,7 @@ class MarkdownGenerator(object):
                 and name not in handlers
             ):  # and obj.__module__ == modname and :
                 methods.append(
-                    "---\n" + self.func2md(obj, clsname=clsname, depth=depth + 1)
+                    _SEPARATOR + self.func2md(obj, clsname=clsname, depth=depth + 1)
                 )
 
         markdown = _CLASS_TEMPLATE.format(
@@ -644,7 +668,7 @@ class MarkdownGenerator(object):
                 and hasattr(obj, "__module__")
                 and obj.__module__ == modname
             ):
-                classes.append("---\n" + self.class2md(obj, depth=depth + 1))
+                classes.append(_SEPARATOR + self.class2md(obj, depth=depth + 1))
                 line_nos.append(self._get_line_no(obj) or 0)
         classes = _order_by_line_nos(classes, line_nos)
 
@@ -658,7 +682,7 @@ class MarkdownGenerator(object):
                 and hasattr(obj, "__module__")
                 and obj.__module__ == modname
             ):
-                functions.append("---\n" + self.func2md(obj, depth=depth + 1))
+                functions.append(_SEPARATOR + self.func2md(obj, depth=depth + 1))
                 line_nos.append(self._get_line_no(obj) or 0)
         functions = _order_by_line_nos(functions, line_nos)
 
@@ -677,7 +701,7 @@ class MarkdownGenerator(object):
 
         variables = _order_by_line_nos(variables, line_nos)
         if variables:
-            new_list = ["**Global Variables**", "---------------", *variables]
+            new_list = ["\n**Global Variables**", "---------------", *variables]
             variables = new_list
 
         markdown = _MODULE_TEMPLATE.format(

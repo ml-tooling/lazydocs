@@ -14,6 +14,7 @@
 - [`generate_docs`](./lazydocs.generation.md#function-generate_docs): Generates markdown documentation for provided paths based on Google-style docstrings.
 - [`to_md_file`](./lazydocs.generation.md#function-to_md_file): Creates an API docs file from a provided text.
 
+
 ---
 
 _This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs)._
