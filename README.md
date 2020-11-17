@@ -9,11 +9,11 @@
 
 <p align="center">
     <a href="https://pypi.org/project/lazydocs/" title="PyPi Version"><img src="https://img.shields.io/pypi/v/lazydocs?color=green&style=flat"></a>
+    <a href="https://pypi.org/project/lazydocs/" title="Python Version"><img src="https://img.shields.io/badge/Python-3.6%2B-blue&style=flat"></a>
     <a href="https://github.com/ml-tooling/lazydocs/commits/" title="Last Commit"><img src="https://img.shields.io/github/last-commit/ml-tooling/lazydocs?style=flat"></a>
-    <a href="https://github.com/ml-tooling/lazydocs/issues" title="Open Issues"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs?style=flat"></a>
     <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a>
-    <a href="https://github.com/ml-tooling/lazydocs/actions?query=workflow%3Abuild-pipeline" title="Build status"><img src="https://github.com/ml-tooling/lazydocs/workflows/build-pipeline/badge.svg"></a>
-    <a href="https://github.com/ml-tooling/lazydocs/blob/main/LICENSE" title="Project License"><img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+    <a href="https://github.com/ml-tooling/lazydocs/actions?query=workflow%3Abuild-pipeline" title="Build status"><img src="https://github.com/ml-tooling/lazydocs/workflows/build-pipeline/badge.svg?style=flat"></a>
+    <a href="https://github.com/ml-tooling/lazydocs/blob/main/LICENSE" title="Project License"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat"></a>
 </p>
 
 <p align="center">
