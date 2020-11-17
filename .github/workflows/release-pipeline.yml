@@ -12,6 +12,7 @@ on:
 env:
   VERSION: ${{ secrets.VERSION }}
   BRANCH_PREFIX: "release/v"
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true # TODO: only needed until act supports the new way
 
 jobs:
   release:
