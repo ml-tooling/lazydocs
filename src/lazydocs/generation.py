@@ -9,7 +9,6 @@ import pkgutil
 import re
 import subprocess
 import types
-from inspect import getdoc, getmembers, getsourcefile, getsourcelines
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
 
@@ -275,7 +274,7 @@ class MarkdownGenerator(object):
     def _get_line_no(self, obj: Any) -> Optional[int]:
         """Gets the source line number of this object. None if `obj` code cannot be found."""
         try:
-            return getsourcelines(obj)[1]
+            return inspect.getsourcelines(obj)[1]
         except Exception:
             # no code found
             return None
@@ -298,7 +297,7 @@ class MarkdownGenerator(object):
             return ""
 
         try:
-            path = os.path.abspath(getsourcefile(obj))  # type: ignore
+            path = os.path.abspath(inspect.getsourcefile(obj))  # type: ignore
         except Exception:
             return ""
 
@@ -329,7 +328,7 @@ class MarkdownGenerator(object):
         return relative_path
 
     def _get_doc_summary(self, obj: Any) -> str:
-        doc = "" if obj.__doc__ is None else getdoc(obj) or ""
+        doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
         # First line should contain the summary
         return doc.split("\n")[0]
 
@@ -356,7 +355,7 @@ class MarkdownGenerator(object):
         # the documentation strings are now inherited if not overridden.
         # For details see: https://docs.python.org/3.6/library/inspect.html#inspect.getdoc
         # doc = getdoc(func) or ""
-        doc = "" if obj.__doc__ is None else getdoc(obj) or ""
+        doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
 
         blockindent = 0
         argindent = 1
@@ -575,7 +574,7 @@ class MarkdownGenerator(object):
             init = ""
 
         variables = []
-        for name, obj in getmembers(
+        for name, obj in inspect.getmembers(
             cls, lambda a: not (inspect.isroutine(a) or inspect.ismethod(a))
         ):
             if not name.startswith("_") and type(obj) == property:
@@ -590,7 +589,7 @@ class MarkdownGenerator(object):
                 )
 
         handlers = []
-        for name, obj in getmembers(cls, inspect.ismethoddescriptor):
+        for name, obj in inspect.getmembers(cls, inspect.ismethoddescriptor):
             if not name.startswith("_") and hasattr(
                 obj, "__module__"
             ):  # and obj.__module__ == modname:
@@ -604,7 +603,7 @@ class MarkdownGenerator(object):
 
         methods = []
         # for name, obj in getmembers(cls, inspect.isfunction):
-        for name, obj in getmembers(
+        for name, obj in inspect.getmembers(
             cls, lambda a: inspect.ismethod(a) or inspect.isfunction(a)
         ):
             if (
@@ -660,7 +659,7 @@ class MarkdownGenerator(object):
 
         classes: List[str] = []
         line_nos: List[int] = []
-        for name, obj in getmembers(module, inspect.isclass):
+        for name, obj in inspect.getmembers(module, inspect.isclass):
             # handle classes
             found.append(name)
             if (
@@ -674,7 +673,7 @@ class MarkdownGenerator(object):
 
         functions: List[str] = []
         line_nos = []
-        for name, obj in getmembers(module, inspect.isfunction):
+        for name, obj in inspect.getmembers(module, inspect.isfunction):
             # handle functions
             found.append(name)
             if (
@@ -846,7 +845,7 @@ def generate_docs(
 
     pydocstyle_cmd = "pydocstyle --convention=google --add-ignore=D100,D101,D102,D103,D104,D105,D107,D202"
 
-    for path in paths:
+    for path in paths:  # lgtm [py/non-iterable-in-for-loop]
         if os.path.isdir(path):
             if validate and subprocess.call(f"{pydocstyle_cmd} {path}", shell=True) > 0:
                 raise Exception(f"Validation for {path} failed.")
@@ -855,7 +854,7 @@ def generate_docs(
                 print(f"Generating docs for python package at: {path}")
             # Generate one file for every discovered module
             for loader, module_name, is_pkg in pkgutil.walk_packages([path]):
-                if module_name in ignored_modules:
+                if module_name in ignored_modules:  # lgtm [py/non-iterable-in-for-loop]
                     continue
 
                 if module_name.split(".")[-1].startswith("_"):
