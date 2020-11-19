@@ -179,7 +179,11 @@ def _order_by_line_nos(objs: Any, line_nos: List[int]) -> List[str]:
 
 
 def to_md_file(
-    string: str, filename: str, out_path: str = ".", watermark: bool = True
+    string: str,
+    filename: str,
+    out_path: str = ".",
+    watermark: bool = True,
+    disable_markdownlint: bool = True,
 ) -> None:
     """Creates an API docs file from a provided text.
 
@@ -187,11 +191,15 @@ def to_md_file(
         string (str): String with line breaks to write to file.
         filename (str): Filename without the .md
         watermark (bool): If `True`, add a watermark with a timestamp to bottom of the markdown files.
+        disable_markdownlint (bool): If `True`, an inline tag is added to disable markdownlint for this file.
         out_path (str): The output directory
     """
     md_file = filename
     if not filename.endswith(".md"):
         md_file = filename + ".md"
+
+    if disable_markdownlint:
+        string = "<!-- markdownlint-disable -->\n" + string
 
     if watermark:
         string += _WATERMARK_TEMPLATE.format(
@@ -919,7 +927,7 @@ def generate_docs(
 
                 if hasattr(obj, "__path__"):
                     # Object is a package
-                    for loader, module_name, is_pkg in pkgutil.walk_packages(
+                    for loader, module_name, _ in pkgutil.walk_packages(
                         path=obj.__path__,  # type: ignore
                         prefix=obj.__name__ + ".",  # type: ignore
                     ):
