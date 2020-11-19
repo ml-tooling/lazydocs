@@ -39,6 +39,10 @@ dist/
 .python-version
 .installed.cfg
 *.egg
+reqlib-metadata
+.mypy_cache/
+.venv
+venv/
 
 # Byte-compiled / optimized / DLL files
 *.pyc
@@ -49,6 +53,7 @@ __pycache__/
 # Unit test / coverage reports
 htmlcov/
 .tox/
+.nox/
 .coverage
 .coverage.*
 .cache
@@ -56,6 +61,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+.pytest_cache/
 
 # NPM / Node / JavaScript
 .npm
@@ -87,4 +93,3 @@ hs_err_pid*
 *.swo
 temp/*
 .DS_Store
-
