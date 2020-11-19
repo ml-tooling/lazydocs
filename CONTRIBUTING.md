@@ -89,11 +89,21 @@ act -b -j build
 
 #### Release a new version
 
-To release a new version and publish all relevant artifacts to respective registries (e.g. Docker image to DockerHub), run the release job with a valid version based on [Semantic Versioning](https://semver.org/) standard:
+To release a new version and publish all relevant artifacts to the respective registries (e.g. Docker image to DockerHub) you can either trigger our release pipeline locally via Act or from the Github UI. For a release, you have to provide a valid version based on [Semantic Versioning](https://semver.org/) standard.
+
+##### Via Act (locally)
+
+To build all components and publish all artifacts from your local machine, execute:
 
 ```bash
 act -b -s VERSION="<MAJOR.MINOR.PATCH>" -j release
 ```
+
+In case you also want to automatically create a valid Github release, you also need to provide a valid `GITHUB_TOKEN` as a secret (`-s GITHUB_TOKEN=<token>`).
+
+##### Via Github Actions
+
+To trigger our release pipeline from Github UI, you can either close a milestone that has a valid version name (`vMAJOR.MINOR.PATCH`) or execute the release pipeline manually via the `workflow_dispatch` UI in the Action Tab (`Actions -> release-pipeline -> Run Workflow`). The release pipeline will automatically create a PR for the new version as well as a Github draft release. To finish the release, you need to merge the release PR into `main`, adapt the changelog in the draft release in the release section on Github, and, finally, publish the release.
 
 ### Commit messages guidelines
 
