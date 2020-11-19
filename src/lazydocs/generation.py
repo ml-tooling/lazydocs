@@ -82,6 +82,12 @@ _WATERMARK_TEMPLATE = """
 _This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs)._
 """
 
+_MKDOCS_PAGES_TEMPLATE = """title: API Reference
+nav:
+    - Overview: {overview_file}
+    - ...
+"""
+
 
 def _get_function_signature(
     function: Callable,
@@ -193,9 +199,9 @@ def to_md_file(
             date=datetime.date.today().strftime("%d %b %Y")
         )
 
+    print("Writing {}.".format(md_file))
     with open(os.path.join(out_path, md_file), "w") as f:
         f.write(string)
-    print("wrote {}.".format(md_file))
 
 
 def _code_snippet(snippet: str) -> str:
@@ -947,10 +953,18 @@ def generate_docs(
             else:
                 raise Exception(f"Failed to generate markdown for {path}.")
 
-    if overview_file:
+    if overview_file and not stdout_mode:
+        if not overview_file.endswith(".md"):
+            overview_file = overview_file + ".md"
+
         to_md_file(
             generator.overview2md(),
             overview_file,
             out_path=output_path,
             watermark=watermark,
         )
+
+        # Write mkdocs pages file
+        print("Writing mkdocs .pages file.")
+        with open(os.path.join(output_path, ".pages"), "w") as f:
+            f.write(_MKDOCS_PAGES_TEMPLATE.format(overview_file=overview_file))
