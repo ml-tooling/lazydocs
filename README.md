@@ -17,7 +17,6 @@
     <a href="https://twitter.com/mltooling" title="ML Tooling on Twitter"><img src="https://img.shields.io/twitter/follow/mltooling.svg?label=follow&style=social"></a>
 </p>
 
-
 <p align="center">
   <a href="#getting-started">Getting Started</a> •
   <a href="#features">Features</a> •
