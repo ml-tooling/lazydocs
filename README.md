@@ -10,11 +10,13 @@
 <p align="center">
     <a href="https://pypi.org/project/lazydocs/" title="PyPi Version"><img src="https://img.shields.io/pypi/v/lazydocs?color=green&style=flat"></a>
     <a href="https://pypi.org/project/lazydocs/" title="Python Version"><img src="https://img.shields.io/badge/Python-3.6%2B-blue&style=flat"></a>
-    <a href="https://github.com/ml-tooling/lazydocs/commits/" title="Last Commit"><img src="https://img.shields.io/github/last-commit/ml-tooling/lazydocs?style=flat"></a>
-    <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a>
-    <a href="https://github.com/ml-tooling/lazydocs/actions?query=workflow%3Abuild-pipeline" title="Build status"><img src="https://github.com/ml-tooling/lazydocs/workflows/build-pipeline/badge.svg?style=flat"></a>
+    <a href="https://www.codacy.com/gh/ml-tooling/lazydocs/dashboard" title="Codacy Analysis"><img src="https://app.codacy.com/project/badge/Grade/1c8ad486ce9547b6b713cce7ca1d1ec3"></a>
+    <a href="https://github.com/ml-tooling/lazydocs/actions?query=workflow%3Abuild-pipeline" title="Build status"><img src="https://img.shields.io/github/workflow/status/ml-tooling/lazydocs/build-pipeline?style=flat"></a>
     <a href="https://github.com/ml-tooling/lazydocs/blob/main/LICENSE" title="Project License"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat"></a>
+    <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a>
+    <a href="https://twitter.com/mltooling" title="ML Tooling on Twitter"><img src="https://img.shields.io/twitter/follow/mltooling.svg?label=follow&style=social"></a>
 </p>
+
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> •
