@@ -55,4 +55,4 @@ fi
 set -x
 
 # Execute build script
-python -u build.py "$BUILD_ARGS"
+python -u build.py $BUILD_ARGS
