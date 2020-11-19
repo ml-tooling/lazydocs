@@ -19,7 +19,7 @@ if [ -n "$GITHUB_TOKEN" ]; then
 fi
 
 if [ -n "$INPUT_CONTAINER_REGISTRY_USERNAME" ] && [ -n "$INPUT_CONTAINER_REGISTRY_PASSWORD" ]; then
-    docker login $INPUT_CONTAINER_REGISTRY_URL -u "$INPUT_CONTAINER_REGISTRY_USERNAME" -p "$INPUT_CONTAINER_REGISTRY_PASSWORD"
+    docker login "$INPUT_CONTAINER_REGISTRY_URL" -u "$INPUT_CONTAINER_REGISTRY_USERNAME" -p "$INPUT_CONTAINER_REGISTRY_PASSWORD"
     BUILD_ARGS="$BUILD_ARGS --container-registry-url=$INPUT_CONTAINER_REGISTRY_URL"
     BUILD_ARGS="$BUILD_ARGS --container-registry-username=$INPUT_CONTAINER_REGISTRY_USERNAME"
     BUILD_ARGS="$BUILD_ARGS --container-registry-password=$INPUT_CONTAINER_REGISTRY_PASSWORD"
@@ -27,9 +27,9 @@ fi
 
 # Navigate to working directory, if provided
 if [ -n "$INPUT_WORKING_DIRECTORY" ]; then
-    cd $INPUT_WORKING_DIRECTORY
+    cd "$INPUT_WORKING_DIRECTORY"
 else
-    cd $GITHUB_WORKSPACE
+    cd "$GITHUB_WORKSPACE"
 fi
 
 if [ -n "$INPUT_PYPI_TOKEN" ]; then
@@ -55,4 +55,4 @@ fi
 set -x
 
 # Execute build script
-python -u build.py $BUILD_ARGS
+python -u build.py "$BUILD_ARGS"

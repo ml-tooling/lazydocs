@@ -53,7 +53,7 @@ RUN apt-get update --fix-missing \
     && rm -rf /var/lib/apt/lists/*
 
 # Add tini
-RUN wget --quiet https://github.com/krallin/tini/releases/download/v0.19.0/tini -O /tini && \
+RUN curl -fsSL https://github.com/krallin/tini/releases/download/v0.19.0/tini -o /tini && \
     chmod +x /tini
 
 # Install Docker in Container
@@ -103,7 +103,7 @@ ENV PATH=$RESOURCES_PATH/.pyenv/shims:$RESOURCES_PATH/.pyenv/bin:$PATH \
 
 # Install web development tools
 RUN apt-get update \
-    && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
+    && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && npm install -g yarn@1 \
     # Clean up
@@ -123,10 +123,11 @@ RUN mkdir -p /github/home/.ssh/ \
 
 # Settings and configurations
 ENV \
-    # Flush log message immediately to stdout
-    PYTHONUNBUFFERED=true \
     # Use local folder as pipenv virtualenv
-    PIPENV_VENV_IN_PROJECT=true
+    PIPENV_VENV_IN_PROJECT=true \
+    # Flush log message immediately to stdout
+    PYTHONUNBUFFERED=true
+
 
 # Install Universal-Build
 # hadolint ignore=DL3013

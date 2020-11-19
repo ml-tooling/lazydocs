@@ -966,5 +966,6 @@ def generate_docs(
 
         # Write mkdocs pages file
         print("Writing mkdocs .pages file.")
+        # TODO: generate navigation items to fix problem with naming
         with open(os.path.join(output_path, ".pages"), "w") as f:
             f.write(_MKDOCS_PAGES_TEMPLATE.format(overview_file=overview_file))
