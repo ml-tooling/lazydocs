@@ -19,7 +19,11 @@ ENV LC_ALL="en_US.UTF-8" \
     LANG="en_US.UTF-8" \
     LANGUAGE="en_US:en" \
     TZ="Europe/Berlin" \
-    DEBIAN_FRONTEND="noninteractive"
+    DEBIAN_FRONTEND="noninteractive" \
+    RESOURCES_PATH="/resources"
+
+# Create resources folder
+RUN mkdir $RESOURCES_PATH && chmod a+rwx $RESOURCES_PATH
 
 # Install basics
 # hadolint ignore=DL3005
@@ -36,6 +40,14 @@ RUN apt-get update --fix-missing \
         git \
         jq \
         software-properties-common \
+        # Required by Pyenv
+        make \
+        build-essential \
+        libbz2-dev \
+        libssl-dev \
+        libreadline-dev \
+        libsqlite3-dev \
+        libffi-dev \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -77,9 +89,17 @@ RUN apt-get update \
         pydocstyle==5.* \
         isort==5.* \
         docker==4.* \
+        nox==2020.8.* \
+        pipenv==2020.11.* \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install pyenv to allow dynamic creation of python versions
+RUN git clone https://github.com/pyenv/pyenv.git $RESOURCES_PATH/.pyenv
+# Add pyenv to path
+ENV PATH=$RESOURCES_PATH/.pyenv/shims:$RESOURCES_PATH/.pyenv/bin:$PATH \
+    PYENV_ROOT=$RESOURCES_PATH/.pyenv
 
 # Install web development tools
 RUN apt-get update \
@@ -90,16 +110,23 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install documentation dependencies
-RUN pip install \
-        mkdocs==1.* \
-        mkdocs-material==6.* \
-        pymdown-extensions==8.* \
-        pygments==2.* \
-        markdown-include==0.6.* \
-        mkdocs-awesome-pages-plugin==2.* \
-        mkdocs-markdownextradata-plugin==0.1.* \
-    && npm install -g markdownlint@^0.21.1 markdownlint-cli@^0.24.0
+# Install markdown lint tool
+RUN npm install -g markdownlint@^0.21.1 markdownlint-cli@^0.24.0
+
+# Workaround to get ssh working in act and github actions
+RUN mkdir -p /github/home/.ssh/ \
+    # create empty config file if not exists
+    && touch /github/home/.ssh/config \
+    && chown -R root:root /github/home/.ssh \
+    && chmod 700 /github/home/.ssh \
+    && ln -s /github/home/.ssh /root/.ssh
+
+# Settings and configurations
+ENV \
+    # Flush log message immediately to stdout
+    PYTHONUNBUFFERED=true \
+    # Use local folder as pipenv virtualenv
+    PIPENV_VENV_IN_PROJECT=true
 
 # Install Universal-Build
 # hadolint ignore=DL3013
