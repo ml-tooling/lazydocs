@@ -31,6 +31,8 @@ categories:
   #- title: "🧰 Maintenance"
   #- title: "⚠️ Deprecations"
   #- title: "✨ New Features"
+exclude-labels:
+  - "skip changelog"
 change-template: "- $TITLE (#$NUMBER) by @$AUTHOR"
 template: |
   $CHANGES

@@ -24,6 +24,8 @@ jobs:
       - if: ${{ github.event.inputs != null  &&  github.event.inputs.version != null }}
         name: set-input-version
         run: echo "::set-env name=VERSION::${{ github.event.inputs.version }}"
+      - name: check-version
+        run: 'if [[ ! "${{ env.VERSION }}" =~ ^([0-9]+\.[0-9]+\.[0-9]+.*)$ ]]; then echo "The version is not valid: ${{ env.VERSION }}"; exit 1; fi'
       - name: set-github-token
         run: echo "::set-env name=GITHUB_TOKEN::${{ secrets.GITHUB_TOKEN }}"
       - if: ${{ env.GITHUB_TOKEN  &&  env.VERSION }}
@@ -88,6 +90,7 @@ jobs:
           pr_body: "Automated pull request for release version ${{ env.VERSION  }}"
           pr_draft: false
           pr_allow_empty: true
+          pr_label: "skip changelog"
           # only works if it exist: pr_milestone: v${{ env.VERSION  }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
       # Fix of release drafter to allow different events to trigger the release
