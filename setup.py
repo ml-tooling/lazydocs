@@ -51,7 +51,6 @@ if dependency_links:
         "Cannot install some dependencies. "
         "Dependency links are currently not supported: " + str(dependency_links)
     )
-dev_requirements, _ = load_requirements(file_name="requirements-dev.txt")
 
 # Import the README and use it as the long-description.
 with open(os.path.join(PWD, "README.md"), encoding="utf-8") as f:
@@ -77,15 +76,29 @@ setup(
     python_requires=REQUIRES_PYTHON,
     url=URL,
     license=LICENSE,
-    packages=find_packages(where="src", exclude=("tests", "test")),
+    packages=find_packages(where="src", exclude=("tests", "test", "examples", "docs")),
     package_dir={"": "src"},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     zip_safe=False,
     install_requires=requirements,
     extras_require={
         # extras can be installed via: pip install package[dev]
-        "dev": [dev_requirements],
-        "test": [dev_requirements],
+        "dev": [
+            "setuptools",
+            "wheel",
+            "twine",
+            "flake8",
+            "pytest",
+            "pytest-mock",
+            "pytest-cov",
+            "mypy",
+            "mypy",
+            "black",
+            "pydocstyle",
+            "isort",
+            "nox",
+            "lazydocs",
+        ],
     },
     include_package_data=True,
     package_data={
