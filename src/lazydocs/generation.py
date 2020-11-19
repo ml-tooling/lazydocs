@@ -110,7 +110,6 @@ def _get_function_signature(
     Returns:
         str: Signature of selected function.
     """
-
     isclass = inspect.isclass(function)
 
     # Get base name.
@@ -219,6 +218,15 @@ def _code_snippet(snippet: str) -> str:
     return result
 
 
+def _get_line_no(obj: Any) -> Optional[int]:
+    """Gets the source line number of this object. None if `obj` code cannot be found."""
+    try:
+        return inspect.getsourcelines(obj)[1]
+    except Exception:
+        # no code found
+        return None
+
+
 def _get_class_that_defined_method(meth: Any) -> Any:
     if inspect.ismethod(meth):
         for cls in inspect.getmro(meth.__self__.__class__):
@@ -254,6 +262,135 @@ def _get_src_root_path(obj: Any) -> str:
     return module.__file__.split(root_package)[0] + root_package
 
 
+def _get_doc_summary(obj: Any) -> str:
+    doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
+    # First line should contain the summary
+    return doc.split("\n")[0]
+
+
+def _get_anchor_tag(header: str) -> str:
+    anchor_tag = header.strip().lower()
+    # Whitespaces to -
+    anchor_tag = re.compile(r"\s").sub("-", anchor_tag)
+    # Remove not allowed characters
+    anchor_tag = re.compile(r"[^a-zA-Z0-9-_]").sub("", anchor_tag)
+    return anchor_tag
+
+
+def _doc2md(obj: Any) -> str:
+    """Parse docstring (with getdoc) according to Google-style formatting and convert to markdown.
+
+    Args:
+        obj: Selected object for markdown generation.
+
+    Returns:
+        str: Markdown documentation for docstring of selected object.
+    """
+    # TODO Evaluate to use: https://github.com/rr-/docstring_parser
+    # The specfication of Inspect#getdoc() was changed since version 3.5,
+    # the documentation strings are now inherited if not overridden.
+    # For details see: https://docs.python.org/3.6/library/inspect.html#inspect.getdoc
+    # doc = getdoc(func) or ""
+    doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
+
+    blockindent = 0
+    argindent = 1
+    out = []
+    arg_list = False
+    literal_block = False
+    md_code_snippet = False
+    quote_block = False
+
+    for line in doc.split("\n"):
+        indent = len(line) - len(line.lstrip())
+        if not md_code_snippet and not literal_block:
+            line = line.lstrip()
+
+        if line.startswith(">>>"):
+            # support for doctest
+            line = line.replace(">>>", "```") + "```"
+
+        if (
+            _RE_BLOCKSTART_LIST.match(line)
+            or _RE_BLOCKSTART_TEXT.match(line)
+            or _RE_QUOTE_TEXT.match(line)
+        ):
+            # start of a new block
+            blockindent = indent
+
+            if quote_block:
+                quote_block = False
+
+            if literal_block:
+                # break literal block
+                out.append("```\n")
+                literal_block = False
+
+            out.append("\n\n**{}**\n".format(line.strip()))
+
+            arg_list = bool(_RE_BLOCKSTART_LIST.match(line))
+
+            if _RE_QUOTE_TEXT.match(line):
+                quote_block = True
+                out.append("\n>")
+        elif line.strip().startswith("```"):
+            # Code snippet is used
+            if md_code_snippet:
+                md_code_snippet = False
+            else:
+                md_code_snippet = True
+
+            out.append(line)
+        elif line.strip().endswith("::"):
+            # Literal Block Support: https://docutils.sourceforge.io/docs/user/rst/quickref.html#literal-blocks
+            literal_block = True
+            out.append(line.replace("::", ":\n```"))
+        elif quote_block:
+            out.append(line.strip())
+        elif indent > blockindent:
+            if arg_list and not literal_block and _RE_TYPED_ARGSTART.match(line):
+                # start of new argument
+                out.append(
+                    "\n"
+                    + " " * blockindent
+                    + " - "
+                    + _RE_TYPED_ARGSTART.sub(r"<b>`\1`</b> (\2): \3", line)
+                )
+                argindent = indent
+            elif arg_list and not literal_block and _RE_ARGSTART.match(line):
+                # start of an exception-type block
+                out.append(
+                    "\n"
+                    + " " * blockindent
+                    + " - "
+                    + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
+                )
+                argindent = indent
+            elif indent > argindent:
+                # attach docs text of argument
+                # * (blockindent + 2)
+                out.append(" " + line)
+            else:
+                out.append(line)
+        else:
+            if line.strip() and literal_block:
+                # indent has changed, if not empty line, break literal block
+                line = "```\n" + line
+                literal_block = False
+            out.append(line)
+
+        if md_code_snippet:
+            out.append("\n")
+        elif not line and not quote_block:
+            out.append("\n\n")
+        elif not line and quote_block:
+            out.append("\n>")
+        else:
+            out.append(" ")
+
+    return "".join(out)
+
+
 class MarkdownGenerator(object):
     """Markdown generator class."""
 
@@ -277,14 +414,6 @@ class MarkdownGenerator(object):
 
         self.generated_objects: List[Dict] = []
 
-    def _get_line_no(self, obj: Any) -> Optional[int]:
-        """Gets the source line number of this object. None if `obj` code cannot be found."""
-        try:
-            return inspect.getsourcelines(obj)[1]
-        except Exception:
-            # no code found
-            return None
-
     def _get_src_path(self, obj: Any, append_base: bool = True) -> str:
         """Creates a src path string with line info for use as markdown link.
 
@@ -295,7 +424,6 @@ class MarkdownGenerator(object):
         Returns:
             str: Source code path with line marker.
         """
-
         src_root_path = None
         if self.src_root_path:
             src_root_path = os.path.abspath(self.src_root_path)
@@ -323,7 +451,7 @@ class MarkdownGenerator(object):
 
         relative_path = os.path.relpath(path, src_root_path)
 
-        lineno = self._get_line_no(obj)
+        lineno = _get_line_no(obj)
         lineno_hashtag = "" if lineno is None else "#L{}".format(lineno)
 
         # add line hash
@@ -332,133 +460,6 @@ class MarkdownGenerator(object):
             relative_path = os.path.join(self.src_base_url, relative_path)
 
         return relative_path
-
-    def _get_doc_summary(self, obj: Any) -> str:
-        doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
-        # First line should contain the summary
-        return doc.split("\n")[0]
-
-    def _get_anchor_tag(self, header: str) -> str:
-        anchor_tag = header.strip().lower()
-        # Whitespaces to -
-        anchor_tag = re.compile(r"\s").sub("-", anchor_tag)
-        # Remove not allowed characters
-        anchor_tag = re.compile(r"[^a-zA-Z0-9-_]").sub("", anchor_tag)
-        return anchor_tag
-
-    def doc2md(self, obj: Any) -> str:
-        """Parse docstring (with getdoc) according to Google-style formatting and convert to markdown.
-
-        Args:
-            obj: Selected object for markdown generation.
-
-        Returns:
-            str: Markdown documentation for docstring of selected object.
-        """
-
-        # TODO Evaluate to use: https://github.com/rr-/docstring_parser
-        # The specfication of Inspect#getdoc() was changed since version 3.5,
-        # the documentation strings are now inherited if not overridden.
-        # For details see: https://docs.python.org/3.6/library/inspect.html#inspect.getdoc
-        # doc = getdoc(func) or ""
-        doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
-
-        blockindent = 0
-        argindent = 1
-        out = []
-        arg_list = False
-        literal_block = False
-        md_code_snippet = False
-        quote_block = False
-
-        for line in doc.split("\n"):
-            indent = len(line) - len(line.lstrip())
-            if not md_code_snippet and not literal_block:
-                line = line.lstrip()
-
-            if line.startswith(">>>"):
-                # support for doctest
-                line = line.replace(">>>", "```") + "```"
-
-            if (
-                _RE_BLOCKSTART_LIST.match(line)
-                or _RE_BLOCKSTART_TEXT.match(line)
-                or _RE_QUOTE_TEXT.match(line)
-            ):
-                # start of a new block
-                blockindent = indent
-
-                if quote_block:
-                    quote_block = False
-
-                if literal_block:
-                    # break literal block
-                    out.append("```\n")
-                    literal_block = False
-
-                out.append("\n\n**{}**\n".format(line.strip()))
-
-                arg_list = bool(_RE_BLOCKSTART_LIST.match(line))
-
-                if _RE_QUOTE_TEXT.match(line):
-                    quote_block = True
-                    out.append("\n>")
-            elif line.strip().startswith("```"):
-                # Code snippet is used
-                if md_code_snippet:
-                    md_code_snippet = False
-                else:
-                    md_code_snippet = True
-
-                out.append(line)
-            elif line.strip().endswith("::"):
-                # Literal Block Support: https://docutils.sourceforge.io/docs/user/rst/quickref.html#literal-blocks
-                literal_block = True
-                out.append(line.replace("::", ":\n```"))
-            elif quote_block:
-                out.append(line.strip())
-            elif indent > blockindent:
-                if arg_list and not literal_block and _RE_TYPED_ARGSTART.match(line):
-                    # start of new argument
-                    out.append(
-                        "\n"
-                        + " " * blockindent
-                        + " - "
-                        + _RE_TYPED_ARGSTART.sub(r"<b>`\1`</b> (\2): \3", line)
-                    )
-                    argindent = indent
-                elif arg_list and not literal_block and _RE_ARGSTART.match(line):
-                    # start of an exception-type block
-                    out.append(
-                        "\n"
-                        + " " * blockindent
-                        + " - "
-                        + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
-                    )
-                    argindent = indent
-                elif indent > argindent:
-                    # attach docs text of argument
-                    # * (blockindent + 2)
-                    out.append(" " + line)
-                else:
-                    out.append(line)
-            else:
-                if line.strip() and literal_block:
-                    # indent has changed, if not empty line, break literal block
-                    line = "```\n" + line
-                    literal_block = False
-                out.append(line)
-
-            if md_code_snippet:
-                out.append("\n")
-            elif not line and not quote_block:
-                out.append("\n\n")
-            elif not line and quote_block:
-                out.append("\n>")
-            else:
-                out.append(" ")
-
-        return "".join(out)
 
     def func2md(self, func: Callable, clsname: str = "", depth: int = 3) -> str:
         """Takes a function (or method) and generates markdown docs.
@@ -471,7 +472,6 @@ class MarkdownGenerator(object):
         Returns:
             str: Markdown documentation for selected function.
         """
-
         section = "#" * depth
         funcname = func.__name__
         modname = None
@@ -491,8 +491,8 @@ class MarkdownGenerator(object):
             header = escfuncname
 
         path = self._get_src_path(func)
-        doc = self.doc2md(func)
-        summary = self._get_doc_summary(func)
+        doc = _doc2md(func)
+        summary = _get_doc_summary(func)
 
         funcdef = _get_function_signature(
             func, ignore_self=True, remove_package=self.remove_package_prefix
@@ -523,7 +523,7 @@ class MarkdownGenerator(object):
                 "name": header,
                 "full_name": full_name,
                 "module": modname,
-                "anchor_tag": self._get_anchor_tag(func_type + "-" + header),
+                "anchor_tag": _get_anchor_tag(func_type + "-" + header),
                 "description": summary,
             }
         )
@@ -552,15 +552,14 @@ class MarkdownGenerator(object):
         Returns:
             str: Markdown documentation for selected class.
         """
-
         section = "#" * depth
         subsection = "#" * (depth + 2)
         clsname = cls.__name__
         modname = cls.__module__
         header = clsname
         path = self._get_src_path(cls)
-        doc = self.doc2md(cls)
-        summary = self._get_doc_summary(cls)
+        doc = _doc2md(cls)
+        summary = _get_doc_summary(cls)
 
         self.generated_objects.append(
             {
@@ -568,7 +567,7 @@ class MarkdownGenerator(object):
                 "name": header,
                 "full_name": header,
                 "module": modname,
-                "anchor_tag": self._get_anchor_tag("class-" + header),
+                "anchor_tag": _get_anchor_tag("class-" + header),
                 "description": summary,
             }
         )
@@ -584,7 +583,7 @@ class MarkdownGenerator(object):
             cls, lambda a: not (inspect.isroutine(a) or inspect.ismethod(a))
         ):
             if not name.startswith("_") and type(obj) == property:
-                comments = self.doc2md(obj) or inspect.getcomments(obj)
+                comments = _doc2md(obj) or inspect.getcomments(obj)
                 comments = "\n\n%s" % comments if comments else ""
                 property_name = f"{clsname}.{name}"
                 if self.remove_package_prefix:
@@ -647,8 +646,8 @@ class MarkdownGenerator(object):
             str: Markdown documentation for selected module.
         """
         modname = module.__name__
-        doc = self.doc2md(module)
-        summary = self._get_doc_summary(module)
+        doc = _doc2md(module)
+        summary = _get_doc_summary(module)
         path = self._get_src_path(module)
         found = []
 
@@ -658,7 +657,7 @@ class MarkdownGenerator(object):
                 "name": modname,
                 "full_name": modname,
                 "module": modname,
-                "anchor_tag": self._get_anchor_tag("module-" + modname),
+                "anchor_tag": _get_anchor_tag("module-" + modname),
                 "description": summary,
             }
         )
@@ -674,7 +673,7 @@ class MarkdownGenerator(object):
                 and obj.__module__ == modname
             ):
                 classes.append(_SEPARATOR + self.class2md(obj, depth=depth + 1))
-                line_nos.append(self._get_line_no(obj) or 0)
+                line_nos.append(_get_line_no(obj) or 0)
         classes = _order_by_line_nos(classes, line_nos)
 
         functions: List[str] = []
@@ -688,7 +687,7 @@ class MarkdownGenerator(object):
                 and obj.__module__ == modname
             ):
                 functions.append(_SEPARATOR + self.func2md(obj, depth=depth + 1))
-                line_nos.append(self._get_line_no(obj) or 0)
+                line_nos.append(_get_line_no(obj) or 0)
         functions = _order_by_line_nos(functions, line_nos)
 
         variables: List[str] = []
@@ -702,7 +701,7 @@ class MarkdownGenerator(object):
                 comments = inspect.getcomments(obj)
                 comments = ": %s" % comments if comments else ""
                 variables.append("- **%s**%s" % (name, comments))
-                line_nos.append(self._get_line_no(obj) or 0)
+                line_nos.append(_get_line_no(obj) or 0)
 
         variables = _order_by_line_nos(variables, line_nos)
         if variables:
@@ -814,7 +813,6 @@ def generate_docs(
         watermark: If `True`, add a watermark with a timestamp to bottom of the markdown files.
         validate: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.
     """
-
     stdout_mode = output_path.lower() == "stdout"
 
     if not stdout_mode and not os.path.exists(output_path):
@@ -859,7 +857,7 @@ def generate_docs(
             if not stdout_mode:
                 print(f"Generating docs for python package at: {path}")
             # Generate one file for every discovered module
-            for loader, module_name, is_pkg in pkgutil.walk_packages([path]):
+            for loader, module_name, _ in pkgutil.walk_packages([path]):
                 if module_name in ignored_modules:  # lgtm [py/non-iterable-in-for-loop]
                     continue
 
