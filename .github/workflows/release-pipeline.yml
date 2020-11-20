@@ -94,7 +94,8 @@ jobs:
           # only works if it exist: pr_milestone: v${{ env.VERSION  }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
       # Fix of release drafter to allow different events to trigger the release
-      - name: checkout-fixed-release-drafter
+      - if: ${{ env.GITHUB_TOKEN }}
+        name: checkout-fixed-release-drafter
         uses: actions/checkout@v2
         with:
           repository: ml-tooling/release-drafter

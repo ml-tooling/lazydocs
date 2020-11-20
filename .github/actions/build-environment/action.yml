@@ -1,5 +1,5 @@
 name: "build-environment"
-description: "Environment to run build, test, and release steps."
+description: "Environment to run build, test, check, and release steps."
 author: "ML Tooling <team@mltooling.org>"
 inputs:
   build_args:
