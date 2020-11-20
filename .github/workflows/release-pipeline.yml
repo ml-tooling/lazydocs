@@ -53,7 +53,7 @@ jobs:
       - name: run-component-tests
         uses: ./.github/actions/build-environment
         with:
-          build_args: --test --force --version=${{ env.VERSION  }}
+          build_args: --test --force --test-marker=slow --version=${{ env.VERSION  }}
       - name: release-components
         uses: ./.github/actions/build-environment
         env:
@@ -74,12 +74,7 @@ jobs:
           commit_user_name: Release Bot
           commit_user_email: actions@github.com
           commit_message: Apply automatic release changes
-      - if: ${{ env.GITHUB_TOKEN }}
-        name: create-release-tag
-        uses: tvdias/github-tagger@v0.0.2
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          tag: v${{ env.VERSION  }}
+          tagging_message: v${{ env.VERSION  }}
       - if: ${{ env.GITHUB_TOKEN }}
         name: pull-request
         uses: repo-sync/pull-request@v2
