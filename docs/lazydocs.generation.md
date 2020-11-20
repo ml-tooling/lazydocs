@@ -1,3 +1,4 @@
+<!-- markdownlint-disable -->
 
 <a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
@@ -7,7 +8,7 @@ Main module for markdown generation.
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L182"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `to_md_file`
 
@@ -16,7 +17,8 @@ to_md_file(
     string: str,
     filename: str,
     out_path: str = '',
-    watermark: bool = True
+    watermark: bool = True,
+    disable_markdownlint: bool = True
 ) → None
 ```
 
@@ -29,12 +31,13 @@ Creates an API docs file from a provided text.
  - <b>`string`</b> (str):  String with line breaks to write to file. 
  - <b>`filename`</b> (str):  Filename without the .md 
  - <b>`watermark`</b> (bool):  If `True`, add a watermark with a timestamp to bottom of the markdown files. 
+ - <b>`disable_markdownlint`</b> (bool):  If `True`, an inline tag is added to disable markdownlint for this file. 
  - <b>`out_path`</b> (str):  The output directory 
 
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L793"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L800"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_docs`
 
@@ -71,13 +74,13 @@ Generates markdown documentation for provided paths based on Google-style docstr
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L402"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MarkdownGenerator`
 Markdown generator class. 
 
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -103,7 +106,7 @@ Initializes the markdown API generator.
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L545"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L553"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `class2md`
 
@@ -128,31 +131,7 @@ Takes a class and creates markdown text to document its methods and variables.
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `doc2md`
-
-```python
-doc2md(obj: Any) → str
-```
-
-Parse docstring (with getdoc) according to Google-style formatting and convert to markdown. 
-
-
-
-**Args:**
- 
- - <b>`obj`</b>:  Selected object for markdown generation. 
-
-
-
-**Returns:**
- 
- - <b>`str`</b>:  Markdown documentation for docstring of selected object. 
-
----
-
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `func2md`
 
@@ -178,7 +157,7 @@ Takes a function (or method) and generates markdown docs.
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L726"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L733"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `import2md`
 
@@ -203,7 +182,7 @@ Generates markdown documentation for a selected object/import.
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L646"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `module2md`
 
@@ -228,7 +207,7 @@ Takes an imported module object and create a Markdown string containing function
 
 ---
 
-<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L746"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ml-tooling/lazydocs/blob/main/src/lazydocs/generation.py#L753"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `overview2md`
 
