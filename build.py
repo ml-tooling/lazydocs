@@ -73,5 +73,4 @@ def main(args: dict) -> None:
 
 
 if __name__ == "__main__":
-    args = build_python.get_sanitized_arguments()
-    main(args)
+    main(build_python.get_sanitized_arguments())
