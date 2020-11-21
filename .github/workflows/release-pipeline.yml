@@ -73,7 +73,7 @@ jobs:
           branch: ${{ env.BRANCH_PREFIX }}${{ env.VERSION  }}
           commit_user_name: Release Bot
           commit_user_email: actions@github.com
-          commit_message: Apply automatic release changes
+          commit_message: Apply automatic release changes for v${{ env.VERSION  }}
           tagging_message: v${{ env.VERSION  }}
       - if: ${{ env.GITHUB_TOKEN }}
         name: pull-request
