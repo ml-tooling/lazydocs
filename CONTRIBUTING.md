@@ -99,11 +99,21 @@ To build all components and publish all artifacts from your local machine, execu
 act -b -s VERSION="<MAJOR.MINOR.PATCH>" -j release
 ```
 
-In case you also want to automatically create a valid Github release, you also need to provide a valid `GITHUB_TOKEN` as a secret (`-s GITHUB_TOKEN=<token>`).
+In case you also want to automatically create a valid Github release, you also need to provide a valid `GITHUB_TOKEN` as a secret (`-s GITHUB_TOKEN=<token>`). Please refer to the next section for information on how to finish and publish the release.
 
 ##### Via Github Actions
 
-To trigger our release pipeline from Github UI, you can either close a milestone that has a valid version name (`vMAJOR.MINOR.PATCH`) or execute the release pipeline manually via the `workflow_dispatch` UI in the Action Tab (`Actions -> release-pipeline -> Run Workflow`). The release pipeline will automatically create a PR for the new version as well as a Github draft release. To finish the release, you need to merge the release PR into `main`, adapt the changelog in the draft release in the release section on Github, and, finally, publish the release.
+To trigger our release pipeline from Github UI, you can either close a milestone that has a valid version name (`vMAJOR.MINOR.PATCH`) or execute the release pipeline manually via the `workflow_dispatch` UI in the Action Tab (`Actions -> release-pipeline -> Run Workflow`). The release pipeline will automatically create a pull request for the new version as well as a draft release on Github.
+
+After successful execution of the release pipeline, the following steps are required to finish the release:
+
+1. Merge the release PR into `main`. Preferably via merge commit to keep the version tag in the `main` branch. We suggest to use the following message for the merge commit: `Finalize release for version <VERSION> (#<PR>)`.
+2. Adapt the changelog of the draft release on Github (in the release section). Mention all other changes that are not covered by pull requests.
+3. Publish the release.
+
+##### Resolve an unsuccessful release
+
+In case the release pipeline fails at any step, we suggest to fix the problem based on the release pipeline logs and create a new release with an incremented `patch` version. To clean up the unsuccessful release, make sure to delete the following artifacts (if they exist): the release branch, the release PR, the version tag, the draft release, and any release artifact that was already published (e.g. on DockerHub, NPM or PyPi).
 
 ### Commit messages guidelines
 
@@ -148,7 +158,9 @@ Commit messages should be as standardized as possible within the repository. A f
 - Import Sorting: [isort](https://github.com/PyCQA/isort)
 - Linting: [flake8](https://github.com/PyCQA/flake8)
 - Type Checking: [mypy](https://github.com/python/mypy)
-- Testing: [pytest](http://doc.pytest.org/) + [nox](https://github.com/theacodes/nox)
+- Testing: [pytest](http://doc.pytest.org/) + [pipenv](https://github.com/pypa/pipenv)
+- Logging: [logging](https://docs.python.org/3/library/logging.html)
+- Package Manager: [pip](https://github.com/pypa/pip)
 - Use type hints wherever possible: [Cheatsheet](https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html)
 - Minimum compatibility: Python 3.6
 
@@ -163,17 +175,17 @@ Commit messages should be as standardized as possible within the repository. A f
 We use [black](https://github.com/ambv/black) for code formatting and [isort](https://github.com/PyCQA/isort) for import sorting. The following commands run `black` and `isort` on all Python files of the component (when executed in the component root):
 
 ```bash
-python -m isort --profile black src
-python -m black src
+isort --profile black src
+black src
 ```
 
 If you want to only check if the formatting and sorting is applied correctly to all files, execute:
 
 ```bash
 # formatting check:
-python -m black --check src
+black --check src
 # import sorting check:
-python -m isort --profile black --check-only src
+isort --profile black --check-only src
 ```
 
 You can also configure `black` and `isort` inside your code editor. For example, if you're using [Visual Studio Code](https://code.visualstudio.com/) with the [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python), you can add the following to your `settings.json` for formatting and auto-format your files on save:
@@ -205,11 +217,11 @@ We use [flake8](https://github.com/PyCQA/flake8) for linting, [mypy](https://git
 
 ```bash
 # type checks
-python -m mypy src
+mypy src
 # linting
-python -m flake8 src
+flake8 src
 # docstring checks
-python -m pydocstyle src
+pydocstyle src
 ```
 
 You can also configure `flake8`, `mypy`, and `pydocstyle` inside your code editor. For example, if you're using [Visual Studio Code](https://code.visualstudio.com/) with the [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python), you can add the following to your `settings.json` for linting and type checking:
@@ -234,11 +246,13 @@ You can also configure `flake8`, `mypy`, and `pydocstyle` inside your code edito
 We use the [pytest](http://doc.pytest.org/) framework for testing. For more info on this, see the [pytest documentation](http://docs.pytest.org/en/latest/contents.html). Tests for modules and classes live in their own directories of the same name inside the `tests` folder. To be discovered, all test files and test functions need to be prefixed with `test_`. To run the test suite, execute:
 
 ```bash
-# run test suite:
-python -m pytest .
+# Run full test suite:
+pytest
+# Exclude all slow tests
+pytest -m "not slow"
 ```
 
-When adding tests, make sure to use descriptive names, keep the code short and concise and only test for one behavior at a time. Try to `parametrize` test cases wherever possible and avoid unnecessary imports. Extensive tests that take a long time should be marked with `@pytest.mark.slow`.
+When adding tests, make sure to use descriptive names, keep the code short and concise and only test for one behavior at a time. Try to avoid unnecessary imports and use `parametrize` test cases wherever possible. Parametrizing tests allows to test multiple inputs to a function and verify that they return the expected output. Use [fixtures](https://docs.pytest.org/en/stable/fixture.html) to share test setups with - optional - setup and tear-down routines. Fixtures can also be parameterized. Extensive tests that take a long time should be marked with `@pytest.mark.slow`.
 
 ## Code of Conduct
 
