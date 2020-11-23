@@ -1,1 +1,1 @@
-FROM mltooling/build-environment:0.1.9
+FROM mltooling/build-environment:0.2.6
