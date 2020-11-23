@@ -767,7 +767,8 @@ class MarkdownGenerator(object):
             entries_md += f"\n- [`{full_name}`]({link})"
             if description:
                 entries_md += ": " + description
-
+        if not entries_md:
+            entries_md = "\n- No modules"
         modules_md = entries_md
 
         entries_md = ""
@@ -778,6 +779,8 @@ class MarkdownGenerator(object):
             entries_md += f"\n- [`{full_name}`]({link})"
             if description:
                 entries_md += ": " + description
+        if not entries_md:
+            entries_md = "\n- No classes"
         classes_md = entries_md
 
         entries_md = ""
@@ -790,6 +793,8 @@ class MarkdownGenerator(object):
             entries_md += f"\n- [`{full_name}`]({link})"
             if description:
                 entries_md += ": " + description
+        if not entries_md:
+            entries_md = "\n- No functions"
         functions_md = entries_md
 
         return _OVERVIEW_TEMPLATE.format(
