@@ -58,10 +58,10 @@ jobs:
         uses: ./.github/actions/build-environment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          PYPI_REPOSITORY: ${{ secrets.PYPI_REPOSITORY }}
         with:
           build_args: --release --force --version=${{ env.VERSION  }}
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
-          pypi_repository: ${{ secrets.PYPI_REPOSITORY }}
           container_registry_url: ${{ secrets.CONTAINER_REGISTRY_URL }}
           container_registry_username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
           container_registry_password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
