@@ -581,7 +581,11 @@ class MarkdownGenerator(object):
         )
 
         try:
-            init = self.func2md(cls.__init__, clsname=clsname)
+            # object module should be the same as the calling module
+            if cls.__init__.__module__ == modname:
+                init = self.func2md(cls.__init__, clsname=clsname)
+            else:
+                init = ""
         except (ValueError, TypeError):
             # this happens if __init__ is outside the repo
             init = ""
@@ -603,9 +607,12 @@ class MarkdownGenerator(object):
 
         handlers = []
         for name, obj in inspect.getmembers(cls, inspect.ismethoddescriptor):
-            if not name.startswith("_") and hasattr(
-                obj, "__module__"
-            ):  # and obj.__module__ == modname:
+            if (
+                not name.startswith("_")
+                and hasattr(obj, "__module__")
+                # object module should be the same as the calling module
+                and obj.__module__ == modname
+            ):
                 handler_name = f"{clsname}.{name}"
                 if self.remove_package_prefix:
                     handler_name = name
@@ -623,7 +630,9 @@ class MarkdownGenerator(object):
                 not name.startswith("_")
                 and hasattr(obj, "__module__")
                 and name not in handlers
-            ):  # and obj.__module__ == modname and :
+                # object module should be the same as the calling module
+                and obj.__module__ == modname
+            ):
                 methods.append(
                     _SEPARATOR + self.func2md(obj, clsname=clsname, depth=depth + 1)
                 )
@@ -773,10 +782,11 @@ class MarkdownGenerator(object):
 
         entries_md = ""
         for obj in list(filter(lambda d: d["type"] == "class", self.generated_objects)):
-            full_name = obj["full_name"]
+            module_name = obj["module"].split(".")[-1]
+            name = module_name + "." + obj["full_name"]
             link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
             description = obj["description"]
-            entries_md += f"\n- [`{full_name}`]({link})"
+            entries_md += f"\n- [`{name}`]({link})"
             if description:
                 entries_md += ": " + description
         if not entries_md:
@@ -787,10 +797,11 @@ class MarkdownGenerator(object):
         for obj in list(
             filter(lambda d: d["type"] == "function", self.generated_objects)
         ):
-            full_name = obj["full_name"]
+            module_name = obj["module"].split(".")[-1]
+            name = module_name + "." + obj["full_name"]
             link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
             description = obj["description"]
-            entries_md += f"\n- [`{full_name}`]({link})"
+            entries_md += f"\n- [`{name}`]({link})"
             if description:
                 entries_md += ": " + description
         if not entries_md:
@@ -877,16 +888,21 @@ def generate_docs(
                 if module_name.split(".")[-1].startswith("_"):
                     continue
 
-                mod = loader.find_module(module_name).load_module(module_name)
-                module_md = generator.module2md(mod)
-                if stdout_mode:
-                    print(module_md)
-                else:
-                    to_md_file(
-                        module_md,
-                        mod.__name__,
-                        out_path=output_path,
-                        watermark=watermark,
+                try:
+                    mod = loader.find_module(module_name).load_module(module_name)
+                    module_md = generator.module2md(mod)
+                    if stdout_mode:
+                        print(module_md)
+                    else:
+                        to_md_file(
+                            module_md,
+                            mod.__name__,
+                            out_path=output_path,
+                            watermark=watermark,
+                        )
+                except Exception as ex:
+                    print(
+                        f"Failed to generate docs for module {module_name}: " + repr(ex)
                     )
         elif os.path.isfile(path):
             if validate and subprocess.call(f"{pydocstyle_cmd} {path}", shell=True) > 0:
@@ -941,17 +957,24 @@ def generate_docs(
 
                         if module_name.split(".")[-1].startswith("_"):
                             continue
-
-                        mod = loader.find_module(module_name).load_module(module_name)
-                        module_md = generator.module2md(mod)
-                        if stdout_mode:
-                            print(module_md)
-                        else:
-                            to_md_file(
-                                module_md,
-                                mod.__name__,
-                                out_path=output_path,
-                                watermark=watermark,
+                        try:
+                            mod = loader.find_module(module_name).load_module(
+                                module_name
+                            )
+                            module_md = generator.module2md(mod)
+                            if stdout_mode:
+                                print(module_md)
+                            else:
+                                to_md_file(
+                                    module_md,
+                                    mod.__name__,
+                                    out_path=output_path,
+                                    watermark=watermark,
+                                )
+                        except Exception as ex:
+                            print(
+                                f"Failed to generate docs for module {module_name}: "
+                                + repr(ex)
                             )
                 else:
                     import_md = generator.import2md(obj)
