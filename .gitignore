@@ -43,6 +43,7 @@ reqlib-metadata
 .mypy_cache/
 .venv
 venv/
+/build
 
 # Byte-compiled / optimized / DLL files
 *.pyc
