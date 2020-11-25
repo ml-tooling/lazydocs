@@ -48,8 +48,8 @@ _FUNC_TEMPLATE = """
 _CLASS_TEMPLATE = """
 {section} <kbd>class</kbd> `{header}`
 {doc}
-{variables}
 {init}
+{variables}
 {handlers}
 {methods}
 """
@@ -604,7 +604,8 @@ class MarkdownGenerator(object):
                 if self.remove_package_prefix:
                     property_name = name
                 variables.append(
-                    "\n%s <kbd>property</kbd> %s%s\n"
+                    _SEPARATOR
+                    + "\n%s <kbd>property</kbd> %s%s\n"
                     % (subsection, property_name, comments)
                 )
 
@@ -621,7 +622,8 @@ class MarkdownGenerator(object):
                     handler_name = name
 
                 handlers.append(
-                    "\n%s <kbd>handler</kbd> %s\n" % (subsection, handler_name)
+                    _SEPARATOR
+                    + "\n%s <kbd>handler</kbd> %s\n" % (subsection, handler_name)
                 )
 
         methods = []
