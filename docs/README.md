@@ -8,12 +8,12 @@
 
 ## Classes
 
-- [`MarkdownGenerator`](./lazydocs.generation.md#class-markdowngenerator): Markdown generator class.
+- [`generation.MarkdownGenerator`](./lazydocs.generation.md#class-markdowngenerator): Markdown generator class.
 
 ## Functions
 
-- [`generate_docs`](./lazydocs.generation.md#function-generate_docs): Generates markdown documentation for provided paths based on Google-style docstrings.
-- [`to_md_file`](./lazydocs.generation.md#function-to_md_file): Creates an API docs file from a provided text.
+- [`generation.generate_docs`](./lazydocs.generation.md#function-generate_docs): Generates markdown documentation for provided paths based on Google-style docstrings.
+- [`generation.to_md_file`](./lazydocs.generation.md#function-to_md_file): Creates an API docs file from a provided text.
 
 
 ---
