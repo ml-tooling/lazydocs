@@ -70,6 +70,7 @@ setup(
         # 'sample': ['package_data.dat'],
     },
     classifiers=[
+        # Update from here: https://pypi.org/classifiers/
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
@@ -86,6 +87,10 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Documentation",
+        "Topic :: Documentation :: Sphinx",
+        "Topic :: Text Processing :: Markup :: Markdown",
+        "Topic :: Utilities",
     ],
     project_urls={
         "Changelog": URL + "/releases",
