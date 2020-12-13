@@ -204,10 +204,6 @@ generate_docs(["my_module"], output_path="./docs")
 
 The full Python API documentation can be found [here](https://github.com/ml-tooling/lazydocs/tree/main/docs) _(generated via lazydocs)_.
 
-## Contributors
-
-[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/0)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/0)[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/1)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/1)[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/2)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/2)[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/3)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/3)[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/4)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/4)[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/5)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/5)[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/6)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/6)[![](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/images/7)](https://sourcerer.io/fame/LukasMasuch/ml-tooling/lazydocs/links/7)
-
 ## Contribution
 
 - Pull requests are encouraged and always welcome. Read our [contribution guidelines](https://github.com/ml-tooling/lazydocs/tree/main/CONTRIBUTING.md) and check out [help-wanted](https://github.com/ml-tooling/lazydocs/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3A"help+wanted"+sort%3Areactions-%2B1-desc+) issues.
