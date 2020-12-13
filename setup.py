@@ -61,6 +61,7 @@ setup(
             "black",
             "pydocstyle",
             "isort",
+            # lazydocs - do not add, otherwise the generation will not work
         ],
     },
     include_package_data=True,
