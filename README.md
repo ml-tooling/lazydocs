@@ -52,7 +52,7 @@ To generate Markdown-based API documentation for your Python project, simply exe
 lazydocs path/to/your/package
 ```
 
-The path can be either a python package (folder) or a specific script. You can also specify one or multiple module, classe or function imports:
+The path can be either a python package (folder) or a specific script. You can also specify one or multiple module-, class- or function-imports:
 
 ```bash
 lazydocs my_package.AwesomeClass
@@ -70,7 +70,7 @@ This project is maintained by [Benjamin Räthlein](https://twitter.com/raethlein
 | 🎁&nbsp; **Feature Requests**  | <a href="https://github.com/ml-tooling/lazydocs/issues?q=is%3Aopen+is%3Aissue+label%3Afeature+sort%3Areactions-%2B1-desc" title="Open Feature Request"><img src="https://img.shields.io/github/issues/ml-tooling/lazydocs/feature.svg?label=feature"></a>                                 |
 | 👩‍💻&nbsp; **Usage Questions**   |   <a href="https://stackoverflow.com/questions/tagged/ml-tooling" title="Open Question on Stackoverflow"><img src="https://img.shields.io/badge/stackoverflow-ml--tooling-orange.svg"></a> <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a> |
 | 🗯&nbsp; **General Discussion** | <a href="https://gitter.im/ml-tooling/lazydocs" title="Chat on Gitter"><img src="https://badges.gitter.im/ml-tooling/lazydocs.svg"></a> <a href="https://twitter.com/mltooling" title="ML Tooling on Twitter"><img src="https://img.shields.io/twitter/follow/mltooling.svg?style=social"></a>|
-| ❓&nbsp; **Other Requests** | <a href="mailto:team@mltooling.org" title="Email ML Tooling Team"><img src="https://img.shields.io/badge/email-ML Tooling-green?logo=mail.ru&style=flat-square&logoColor=white"></a> |
+| ❓&nbsp; **Other Requests** | <a href="mailto:team@mltooling.org" title="Email ML Tooling Team"><img src="https://img.shields.io/badge/email-ML Tooling-green?logo=mail.ru&logoColor=white"></a> |
 
 ## Features
 
@@ -215,7 +215,7 @@ The full Python API documentation can be found [here](https://github.com/ml-tool
 
 > _**Requirements**: [Docker](https://docs.docker.com/get-docker/) and [Act](https://github.com/nektos/act#installation) are required to be installed on your machine to execute the build process._
 
-To simplify the process of building this project from scratch, we provide build-scripts that run all necessary steps (build, check, test, and release) within a containerized environment. To build and test your changes, execute the following command in the project root folder:
+To simplify the process of building this project from scratch, we provide build-scripts - based on [universal-build](https://github.com/ml-tooling/universal-build) - that run all necessary steps (build, check, test, and release) within a containerized environment. To build and test your changes, execute the following command in the project root folder:
 
 ```bash
 act -b -j build
