@@ -61,7 +61,6 @@ setup(
             "black",
             "pydocstyle",
             "isort",
-            "lazydocs",
         ],
     },
     include_package_data=True,
