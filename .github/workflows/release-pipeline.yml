@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version of this release."
+        description: "Version of this release"
         required: true
   milestone:
     types: [closed]
