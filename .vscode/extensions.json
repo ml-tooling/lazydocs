@@ -2,17 +2,9 @@
   "recommendations": [
     // General Development
     "EditorConfig.EditorConfig",
-    "VisualStudioExptTeam.vscodeintellicode",
-    "formulahendry.code-runner",
-    "ms-vscode-remote.vscode-remote-extensionpack",
-    "DotJoshJohnson.xml",
     "redhat.vscode-yaml",
-    "christian-kohler.path-intellisense",
     "esbenp.prettier-vscode",
-    // Container Development
-    "ms-azuretools.vscode-docker",
     // Collaboration
-    "eamodio.gitlens",
     "aaron-bond.better-comments",
     // Markdown
     "DavidAnson.vscode-markdownlint",
@@ -20,7 +12,6 @@
     "shd101wyy.markdown-preview-enhanced",
     // Python Development
     "ms-python.python",
-    "ms-python.vscode-pylance",
     "njpwerner.autodocstring"
   ]
 }
