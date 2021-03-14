@@ -24,6 +24,8 @@ _RE_QUOTE_TEXT = re.compile(r"(Notes:|Note:).{0,2}$", re.IGNORECASE)
 _RE_TYPED_ARGSTART = re.compile(r"([\w\[\]_]{1,}?)\s*?\((.*?)\):(.{2,})", re.IGNORECASE)
 _RE_ARGSTART = re.compile(r"(.{1,}?):(.{2,})", re.IGNORECASE)
 
+_IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
+
 # String templates
 
 _SOURCE_BADGE_TEMPLATE = """
@@ -179,7 +181,7 @@ def _order_by_line_nos(objs: Any, line_nos: List[int]) -> List[str]:
 
 
 def to_md_file(
-    string: str,
+    markdown_str: str,
     filename: str,
     out_path: str = ".",
     watermark: bool = True,
@@ -188,27 +190,31 @@ def to_md_file(
     """Creates an API docs file from a provided text.
 
     Args:
-        string (str): String with line breaks to write to file.
+        markdown_str (str): Markdown string with line breaks to write to file.
         filename (str): Filename without the .md
         watermark (bool): If `True`, add a watermark with a timestamp to bottom of the markdown files.
         disable_markdownlint (bool): If `True`, an inline tag is added to disable markdownlint for this file.
         out_path (str): The output directory
     """
+    if not markdown_str:
+        # Dont write empty files
+        return
+
     md_file = filename
     if not filename.endswith(".md"):
         md_file = filename + ".md"
 
     if disable_markdownlint:
-        string = "<!-- markdownlint-disable -->\n" + string
+        markdown_str = "<!-- markdownlint-disable -->\n" + markdown_str
 
     if watermark:
-        string += _WATERMARK_TEMPLATE.format(
+        markdown_str += _WATERMARK_TEMPLATE.format(
             date=datetime.date.today().strftime("%d %b %Y")
         )
 
     print("Writing {}.".format(md_file))
     with open(os.path.join(out_path, md_file), "w") as f:
-        f.write(string)
+        f.write(markdown_str)
 
 
 def _code_snippet(snippet: str) -> str:
@@ -254,6 +260,20 @@ def _get_class_that_defined_method(meth: Any) -> Any:
     return getattr(meth, "__objclass__", None)  # handle special descriptor objects
 
 
+def _get_docstring(obj: Any) -> str:
+    return "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
+
+
+def _is_object_ignored(obj: Any) -> bool:
+    if (
+        _IGNORE_GENERATION_INSTRUCTION.replace(" ", "").lower()
+        in _get_docstring(obj).replace(" ", "").lower()
+    ):
+        # Do not generate anything if docstring contains ignore instruction
+        return True
+    return False
+
+
 def _get_src_root_path(obj: Any) -> str:
     """Get the root path to a imported module.
 
@@ -271,9 +291,8 @@ def _get_src_root_path(obj: Any) -> str:
 
 
 def _get_doc_summary(obj: Any) -> str:
-    doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
     # First line should contain the summary
-    return doc.split("\n")[0]
+    return _get_docstring(obj).split("\n")[0]
 
 
 def _get_anchor_tag(header: str) -> str:
@@ -299,7 +318,7 @@ def _doc2md(obj: Any) -> str:
     # the documentation strings are now inherited if not overridden.
     # For details see: https://docs.python.org/3.6/library/inspect.html#inspect.getdoc
     # doc = getdoc(func) or ""
-    doc = "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
+    doc = _get_docstring(obj)
 
     blockindent = 0
     argindent = 1
@@ -480,6 +499,10 @@ class MarkdownGenerator(object):
         Returns:
             str: Markdown documentation for selected function.
         """
+        if _is_object_ignored(func):
+            # The function is ignored from generation
+            return ""
+
         section = "#" * depth
         funcname = func.__name__
         modname = None
@@ -560,6 +583,10 @@ class MarkdownGenerator(object):
         Returns:
             str: Markdown documentation for selected class.
         """
+        if _is_object_ignored(cls):
+            # The class is ignored from generation
+            return ""
+
         section = "#" * depth
         subsection = "#" * (depth + 2)
         clsname = cls.__name__
@@ -638,9 +665,9 @@ class MarkdownGenerator(object):
                 # object module should be the same as the calling module
                 and obj.__module__ == modname
             ):
-                methods.append(
-                    _SEPARATOR + self.func2md(obj, clsname=clsname, depth=depth + 1)
-                )
+                function_md = self.func2md(obj, clsname=clsname, depth=depth + 1)
+                if function_md:
+                    methods.append(_SEPARATOR + function_md)
 
         markdown = _CLASS_TEMPLATE.format(
             section=section,
@@ -667,6 +694,10 @@ class MarkdownGenerator(object):
         Returns:
             str: Markdown documentation for selected module.
         """
+        if _is_object_ignored(module):
+            # The module is ignored from generation
+            return ""
+
         modname = module.__name__
         doc = _doc2md(module)
         summary = _get_doc_summary(module)
@@ -694,8 +725,10 @@ class MarkdownGenerator(object):
                 and hasattr(obj, "__module__")
                 and obj.__module__ == modname
             ):
-                classes.append(_SEPARATOR + self.class2md(obj, depth=depth + 1))
-                line_nos.append(_get_line_no(obj) or 0)
+                class_markdown = self.class2md(obj, depth=depth + 1)
+                if class_markdown:
+                    classes.append(_SEPARATOR + class_markdown)
+                    line_nos.append(_get_line_no(obj) or 0)
         classes = _order_by_line_nos(classes, line_nos)
 
         functions: List[str] = []
@@ -708,8 +741,10 @@ class MarkdownGenerator(object):
                 and hasattr(obj, "__module__")
                 and obj.__module__ == modname
             ):
-                functions.append(_SEPARATOR + self.func2md(obj, depth=depth + 1))
-                line_nos.append(_get_line_no(obj) or 0)
+                function_md = self.func2md(obj, depth=depth + 1)
+                if function_md:
+                    functions.append(_SEPARATOR + function_md)
+                    line_nos.append(_get_line_no(obj) or 0)
         functions = _order_by_line_nos(functions, line_nos)
 
         variables: List[str] = []
@@ -894,7 +929,7 @@ def generate_docs(
                     continue
 
                 try:
-                    mod = loader.find_module(module_name).load_module(module_name)
+                    mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
                     module_md = generator.module2md(mod)
                     if stdout_mode:
                         print(module_md)
@@ -963,7 +998,7 @@ def generate_docs(
                         if module_name.split(".")[-1].startswith("_"):
                             continue
                         try:
-                            mod = loader.find_module(module_name).load_module(
+                            mod = loader.find_module(module_name).load_module(  # type: ignore
                                 module_name
                             )
                             module_md = generator.module2md(mod)
