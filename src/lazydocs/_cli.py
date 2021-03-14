@@ -11,7 +11,7 @@ app = typer.Typer()
 
 @app.command()
 def generate(
-    paths: List[str] = typer.Argument(
+    paths: List[str] = typer.Argument(  # type: ignore
         ..., help="Selected paths or imports for markdown generation."
     ),
     output_path: str = typer.Option(
