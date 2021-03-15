@@ -26,7 +26,7 @@ def test_module2md() -> None:
     markdown = generator.module2md(generation)
     # Remove whitespaces: fix changes between py version 3.6 3.7 in signature method
     md_hash = hashlib.md5(markdown.replace(" ", "").encode("utf-8")).hexdigest()
-    assert md_hash == "148925d2185790ff780111699647d768"
+    assert md_hash == "e4637206eb4f1fb27360eed8cb3d99e2"
 
 
 def test_func2md() -> None:
