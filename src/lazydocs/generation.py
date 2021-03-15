@@ -274,6 +274,22 @@ def _is_object_ignored(obj: Any) -> bool:
     return False
 
 
+def _is_module_ignored(module_name: str, ignored_modules: List[str]) -> bool:
+    """Checks if a given module is ignored."""
+    if module_name.split(".")[-1].startswith("_"):
+        return True
+
+    for ignored_module in ignored_modules:
+        if module_name == ignored_module:
+            return True
+
+        # Check is module is subpackage of an ignored package
+        if module_name.startswith(ignored_module + "."):
+            return True
+
+    return False
+
+
 def _get_src_root_path(obj: Any) -> str:
     """Get the root path to a imported module.
 
@@ -862,7 +878,7 @@ def generate_docs(
     src_root_path: Optional[str] = None,
     src_base_url: Optional[str] = None,
     remove_package_prefix: bool = False,
-    ignored_modules: List[str] = [],
+    ignored_modules: Optional[List[str]] = None,
     overview_file: Optional[str] = None,
     watermark: bool = True,
     validate: bool = False,
@@ -885,6 +901,9 @@ def generate_docs(
     if not stdout_mode and not os.path.exists(output_path):
         # Create output path
         os.makedirs(output_path)
+
+    if not ignored_modules:
+        ignored_modules = list()
 
     if not src_root_path:
         try:
@@ -923,17 +942,23 @@ def generate_docs(
 
             if not stdout_mode:
                 print(f"Generating docs for python package at: {path}")
+
             # Generate one file for every discovered module
             for loader, module_name, _ in pkgutil.walk_packages([path]):
-                if module_name in ignored_modules:  # lgtm [py/non-iterable-in-for-loop]
-                    continue
-
-                if module_name.split(".")[-1].startswith("_"):
+                if _is_module_ignored(module_name, ignored_modules):
+                    # Add module to ignore list, so submodule will also be ignored
+                    ignored_modules.append(module_name)
                     continue
 
                 try:
                     mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
                     module_md = generator.module2md(mod)
+                    if not module_md:
+                        # Module md is empty -> ignore module and all submodules
+                        # Add module to ignore list, so submodule will also be ignored
+                        ignored_modules.append(module_name)
+                        continue
+
                     if stdout_mode:
                         print(module_md)
                     else:
@@ -995,16 +1020,23 @@ def generate_docs(
                         path=obj.__path__,  # type: ignore
                         prefix=obj.__name__ + ".",  # type: ignore
                     ):
-                        if module_name in ignored_modules:
+                        if _is_module_ignored(module_name, ignored_modules):
+                            # Add module to ignore list, so submodule will also be ignored
+                            ignored_modules.append(module_name)
                             continue
 
-                        if module_name.split(".")[-1].startswith("_"):
-                            continue
                         try:
                             mod = loader.find_module(module_name).load_module(  # type: ignore
                                 module_name
                             )
                             module_md = generator.module2md(mod)
+
+                            if not module_md:
+                                # Module MD is empty -> ignore module and all submodules
+                                # Add module to ignore list, so submodule will also be ignored
+                                ignored_modules.append(module_name)
+                                continue
+
                             if stdout_mode:
                                 print(module_md)
                             else:
