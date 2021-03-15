@@ -374,7 +374,7 @@ def _doc2md(obj: Any) -> str:
             out.append(line.replace("::", ":\n```"))
         elif quote_block:
             out.append(line.strip())
-        elif line.strip().startswith("-") and not arg_list:
+        elif line.strip().startswith("-"):
             # Allow bullet lists
             out.append("\n" + (" " * indent) + line)
         elif indent > blockindent:
