@@ -144,7 +144,11 @@ def _get_function_signature(
                     return_type = inspect.signature(function).return_annotation.__name__
                 except Exception:
                     pass
-            return_type = return_type.lstrip("typing.")
+            # Remove all typing path prefixes
+            return_type = return_type.replace("typing.", "")
+            if remove_package:
+                # Remove all package path return type
+                return_type = re.sub(r"([a-zA-Z0-9_]*?\.)", "", return_type)
 
         for parameter in parameters:
             argument = str(parameters[parameter])
@@ -153,6 +157,17 @@ def _get_function_signature(
                 continue
             # Reintroduce Optionals
             argument = re.sub(r"Union\[(.*?), NoneType\]", r"Optional[\1]", argument)
+
+            # Remove package
+            if remove_package:
+                # Remove all package path from parameter signature
+                if "=" not in argument:
+                    argument = re.sub(r"([a-zA-Z0-9_]*?\.)", "", argument)
+                else:
+                    # Remove only from part before the first =
+                    argument_split = argument.split("=")
+                    argument_split[0] = re.sub(r"([a-zA-Z0-9_]*?\.)", "", argument_split[0])
+                    argument = "=".join(argument_split)
             arguments.append(argument)
     else:
         print("Seems like function " + name + " does not have any signature")
@@ -168,9 +183,6 @@ def _get_function_signature(
 
     signature += ")" + ((" → " + return_type) if return_type else "")
 
-    if remove_package:
-        # Remove all package path from signature
-        signature = re.sub(r"([a-zA-Z0-9_]*?\.)", "", signature)
     return signature
 
 
