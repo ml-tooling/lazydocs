@@ -999,6 +999,7 @@ def generate_docs(
                 module_name,
                 path,
             )
+            assert spec is not None
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)  # type: ignore
 
