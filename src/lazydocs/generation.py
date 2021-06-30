@@ -166,7 +166,9 @@ def _get_function_signature(
                 else:
                     # Remove only from part before the first =
                     argument_split = argument.split("=")
-                    argument_split[0] = re.sub(r"([a-zA-Z0-9_]*?\.)", "", argument_split[0])
+                    argument_split[0] = re.sub(
+                        r"([a-zA-Z0-9_]*?\.)", "", argument_split[0]
+                    )
                     argument = "=".join(argument_split)
             arguments.append(argument)
     else:
