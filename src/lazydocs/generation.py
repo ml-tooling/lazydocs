@@ -227,7 +227,7 @@ def to_md_file(
         )
 
     print("Writing {}.".format(md_file))
-    with open(os.path.join(out_path, md_file), "w") as f:
+    with open(os.path.join(out_path, md_file), "w", encoding="utf-8") as f:
         f.write(markdown_str)
 
 
