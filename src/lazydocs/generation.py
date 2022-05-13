@@ -29,7 +29,7 @@ _IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
 # String templates
 
 _SOURCE_BADGE_TEMPLATE = """
-<a href="{path}"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="{path}"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
 """
 
 _SEPARATOR = """
