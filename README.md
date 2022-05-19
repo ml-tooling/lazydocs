@@ -140,7 +140,7 @@ Once you run or deploy your mkdocs documentation, you will see the API Reference
 Lazydocs can only parse valid Google-style docstring. To prevent the generation of invalid markdown documentation, you can use the `validate` flag:
 
 ```bash
-layzdocs --validate my_package
+lazydocs --validate my_package
 ```
 
 This will run [pydocstyle](https://github.com/PyCQA/pydocstyle) on your docstring and cancel the generation if an issue is found.
@@ -150,7 +150,7 @@ This will run [pydocstyle](https://github.com/PyCQA/pydocstyle) on your docstrin
 To get the markdown documentation as console output instead of the file generation, specify `stdout` as the `output-path`:
 
 ```bash
-layzdocs --output-path=stdout my_package
+lazydocs --output-path=stdout my_package
 ```
 
 ## Documentation
@@ -160,7 +160,7 @@ layzdocs --output-path=stdout my_package
 <!-- generated via typer-cli: typer src/lazydocs/_cli.py utils docs -->
 
 ```bash
-laydocs [OPTIONS] PATHS...
+lazydocs [OPTIONS] PATHS...
 ```
 
 **Arguments**:
