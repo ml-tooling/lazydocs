@@ -1031,6 +1031,14 @@ def generate_docs(
 
                 if hasattr(obj, "__path__"):
                     # Object is a package
+                    import_md = generator.import2md(obj)
+                    if stdout_mode:
+                        print(import_md)
+                    else:
+                        to_md_file(
+                            import_md, path, out_path=output_path, watermark=watermark
+                        )
+
                     for loader, module_name, _ in pkgutil.walk_packages(
                         path=obj.__path__,  # type: ignore
                         prefix=obj.__name__ + ".",  # type: ignore
