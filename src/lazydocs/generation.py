@@ -965,7 +965,8 @@ def generate_docs(
                     continue
 
                 try:
-                    mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
+                    mod_spec = loader.find_spec(module_name)
+                    mod = importlib.util.module_from_spec(mod_spec)
                     module_md = generator.module2md(mod)
                     if not module_md:
                         # Module md is empty -> ignore module and all submodules
@@ -1041,9 +1042,8 @@ def generate_docs(
                             continue
 
                         try:
-                            mod = loader.find_module(module_name).load_module(  # type: ignore
-                                module_name
-                            )
+                            mod_spec = loader.find_spec(module_name)
+                            mod = importlib.util.module_from_spec(mod_spec)
                             module_md = generator.module2md(mod)
 
                             if not module_md:
