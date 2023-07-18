@@ -9,6 +9,9 @@ import pkgutil
 import re
 import subprocess
 import types
+import urllib.parse
+from enum import Enum
+from pathlib import Path
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
 
@@ -357,11 +360,14 @@ def _doc2md(obj: Any) -> str:
     literal_block = False
     md_code_snippet = False
     quote_block = False
+    snippet_indent = 0
 
     for line in doc.split("\n"):
         indent = len(line) - len(line.lstrip())
         if not md_code_snippet and not literal_block:
             line = line.lstrip()
+        else:
+            line = line[snippet_indent:]
 
         if line.startswith(">>>"):
             # support for doctest
@@ -394,8 +400,10 @@ def _doc2md(obj: Any) -> str:
             # Code snippet is used
             if md_code_snippet:
                 md_code_snippet = False
+                snippet_indent = 0
             else:
                 md_code_snippet = True
+                snippet_indent = indent
 
             out.append(line)
         elif line.strip().endswith("::"):
@@ -426,7 +434,7 @@ def _doc2md(obj: Any) -> str:
                     + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
                 )
                 argindent = indent
-            elif indent > argindent:
+            elif arg_list and indent > argindent:
                 # attach docs text of argument
                 # * (blockindent + 2)
                 out.append(" " + line)
@@ -445,8 +453,6 @@ def _doc2md(obj: Any) -> str:
             out.append("\n\n")
         elif not line and quote_block:
             out.append("\n>")
-        else:
-            out.append(" ")
 
     return "".join(out)
 
@@ -506,20 +512,15 @@ class MarkdownGenerator(object):
                 path = obj.__name__
 
             assert isinstance(path, str)
-
             path = path.replace(".", "/")
 
-        relative_path = os.path.relpath(path, src_root_path)
+        src_path = Path(path).relative_to(src_root_path).as_posix()
+        if append_base and self.src_base_url:
+            src_path = urllib.parse.urljoin(self.src_base_url, src_path)
 
         lineno = _get_line_no(obj)
-        lineno_hashtag = "" if lineno is None else "#L{}".format(lineno)
-
-        # add line hash
-        relative_path = relative_path + lineno_hashtag
-        if append_base and self.src_base_url:
-            relative_path = os.path.join(self.src_base_url, relative_path)
-
-        return relative_path
+        anchor = "" if lineno is None else "#L{}".format(lineno)
+        return src_path + anchor
 
     def func2md(self, func: Callable, clsname: str = "", depth: int = 3) -> str:
         """Takes a function (or method) and generates markdown docs.
@@ -654,6 +655,13 @@ class MarkdownGenerator(object):
             init = ""
 
         variables = []
+
+        # Handle enumerations
+        if issubclass(cls, Enum):
+            sectionheader = "#" * (depth + 1)
+            values = "\n".join("- **%s** = %s" % (obj.name, obj.value) for obj in cls)
+            variables.append(_SEPARATOR + "%s <kbd>values</kbd>\n%s" % (sectionheader, values))
+
         for name, obj in inspect.getmembers(
             cls, lambda a: not (inspect.isroutine(a) or inspect.ismethod(a))
         ):
@@ -737,6 +745,10 @@ class MarkdownGenerator(object):
         path = self._get_src_path(module)
         found = []
 
+        exported = getattr(module, "__all__", [])
+        if exported:
+            print(f"Exported objects in '{modname}': {', '.join(exported)}")
+
         self.generated_objects.append(
             {
                 "type": "module",
@@ -753,15 +765,16 @@ class MarkdownGenerator(object):
         for name, obj in inspect.getmembers(module, inspect.isclass):
             # handle classes
             found.append(name)
-            if (
-                not name.startswith("_")
-                and hasattr(obj, "__module__")
-                and obj.__module__ == modname
-            ):
-                class_markdown = self.class2md(obj, depth=depth + 1)
-                if class_markdown:
-                    classes.append(_SEPARATOR + class_markdown)
-                    line_nos.append(_get_line_no(obj) or 0)
+            if name.startswith("_"):
+                continue
+            if name not in exported and hasattr(obj, "__module__") and obj.__module__ != modname:
+                continue
+
+            class_markdown = self.class2md(obj, depth=depth + 1)
+            if class_markdown:
+                classes.append(_SEPARATOR + class_markdown)
+                line_nos.append(_get_line_no(obj) or 0)
+
         classes = _order_by_line_nos(classes, line_nos)
 
         functions: List[str] = []
@@ -769,29 +782,32 @@ class MarkdownGenerator(object):
         for name, obj in inspect.getmembers(module, inspect.isfunction):
             # handle functions
             found.append(name)
-            if (
-                not name.startswith("_")
-                and hasattr(obj, "__module__")
-                and obj.__module__ == modname
-            ):
-                function_md = self.func2md(obj, depth=depth + 1)
-                if function_md:
-                    functions.append(_SEPARATOR + function_md)
-                    line_nos.append(_get_line_no(obj) or 0)
+            if name.startswith("_"):
+                continue
+            if name not in exported and hasattr(obj, "__module__") and obj.__module__ != modname:
+                continue
+
+            function_md = self.func2md(obj, depth=depth + 1)
+            if function_md:
+                functions.append(_SEPARATOR + function_md)
+                line_nos.append(_get_line_no(obj) or 0)
+
         functions = _order_by_line_nos(functions, line_nos)
 
         variables: List[str] = []
         line_nos = []
         for name, obj in module.__dict__.items():
-            if not name.startswith("_") and name not in found:
+            if name.startswith("_") or name in found:
+                continue
+            if name not in exported:
                 if hasattr(obj, "__module__") and obj.__module__ != modname:
                     continue
                 if hasattr(obj, "__name__") and not obj.__name__.startswith(modname):
                     continue
-                comments = inspect.getcomments(obj)
-                comments = ": %s" % comments if comments else ""
-                variables.append("- **%s**%s" % (name, comments))
-                line_nos.append(_get_line_no(obj) or 0)
+            comments = inspect.getcomments(obj)
+            comments = ": %s" % comments if comments else ""
+            variables.append("- **%s**%s" % (name, comments))
+            line_nos.append(_get_line_no(obj) or 0)
 
         variables = _order_by_line_nos(variables, line_nos)
         if variables:
@@ -932,8 +948,10 @@ def generate_docs(
             )
             if src_root_path and src_base_url is None and not stdout_mode:
                 # Set base url to be relative to the git root folder based on output_path
-                src_base_url = os.path.relpath(
-                    src_root_path, os.path.abspath(output_path)
+                src_base_url = (
+                    Path(src_root_path)
+                    .relative_to(os.path.abspath(output_path))
+                    .as_posix()
                 )
 
         except Exception:
@@ -961,6 +979,7 @@ def generate_docs(
             for loader, module_name, _ in pkgutil.walk_packages([path]):
                 if _is_module_ignored(module_name, ignored_modules):
                     # Add module to ignore list, so submodule will also be ignored
+                    print(f"Ignoring module: {module_name}")
                     ignored_modules.append(module_name)
                     continue
 
