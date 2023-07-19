@@ -515,7 +515,7 @@ class MarkdownGenerator(object):
             assert isinstance(path, str)
             path = path.replace(".", "/")
 
-        src_path = Path(path).relative_to(src_root_path).as_posix()
+        src_path = Path(os.path.abspath(path)).relative_to(src_root_path).as_posix()
         if append_base and self.src_base_url:
             base = self.src_base_url
             if base.endswith('/'):
