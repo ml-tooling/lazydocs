@@ -14,6 +14,7 @@ from enum import Enum
 from pathlib import Path
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
+import sys
 
 _RE_BLOCKSTART_LIST = re.compile(
     r"(Args:|Arg:|Arguments:|Parameters:|Kwargs:|Attributes:|Returns:|Yields:|Kwargs:|Raises:).{0,2}$",
@@ -516,7 +517,12 @@ class MarkdownGenerator(object):
 
         src_path = Path(path).relative_to(src_root_path).as_posix()
         if append_base and self.src_base_url:
-            src_path = urllib.parse.urljoin(self.src_base_url, src_path)
+            base = self.src_base_url
+            if base.endswith('/'):
+                base = base[:-1]
+            if src_path.startswith('/'):
+                src_path = src_path[1:]
+            src_path = f'{base}/{src_path}'
 
         lineno = _get_line_no(obj)
         anchor = "" if lineno is None else "#L{}".format(lineno)
@@ -948,12 +954,10 @@ def generate_docs(
             )
             if src_root_path and src_base_url is None and not stdout_mode:
                 # Set base url to be relative to the git root folder based on output_path
-                src_base_url = (
-                    Path(src_root_path)
-                    .relative_to(os.path.abspath(output_path))
-                    .as_posix()
-                )
-
+                src_base_url = os.path.relpath(
+                    src_root_path, os.path.abspath(output_path))
+                if sys.platform == 'win32':
+                    src_base_url = src_base_url.replace('\\', '/')
         except Exception:
             # Ignore all exceptions
             pass
