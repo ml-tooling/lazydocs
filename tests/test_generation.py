@@ -35,3 +35,9 @@ def test_func2md() -> None:
     # Remove whitespaces: fix changes between py version 3.6 3.7 in signature method
     md_hash = hashlib.md5(markdown.replace(" ", "").encode("utf-8")).hexdigest()
     assert md_hash == "797bad8c00ee6f189cb6f578eaec02c4"
+    
+def test_dataclass() -> None:
+    generator = MarkdownGenerator()
+    from resources.example import dataclass_example
+
+    assert '## <kbd>class</kbd> `MyDataClass`' in generator.module2md(dataclass_example)

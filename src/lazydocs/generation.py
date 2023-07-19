@@ -268,10 +268,10 @@ def _get_class_that_defined_method(meth: Any) -> Any:
         mod = inspect.getmodule(meth)
         if mod is None:
             return None
-        cls = getattr(
-            inspect.getmodule(meth),
-            meth.__qualname__.split(".<locals>", 1)[0].rsplit(".", 1)[0],
-        )
+        method_name = meth.__qualname__.split(".<locals>", 1)[0].rsplit(".", 1)[0]
+        # If the method was defined elsewhere (i.e.: dataclasses), it'll not
+        # be available in the mod.
+        cls = getattr(mod, method_name, None)
         if isinstance(cls, type):
             return cls
     return getattr(meth, "__objclass__", None)  # handle special descriptor objects
