@@ -744,11 +744,8 @@ class MarkdownGenerator(object):
         doc = _doc2md(module)
         summary = _get_doc_summary(module)
         path = self._get_src_path(module)
-        found = []
-
         exported = getattr(module, "__all__", None)
-        if exported is not None:
-            print(f"Exported objects in '{modname}': {', '.join(exported)}")
+        found = []
 
         self.generated_objects.append(
             {
