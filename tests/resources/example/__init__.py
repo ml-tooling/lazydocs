@@ -4,8 +4,15 @@ from ._class import AClass
 from ._types import AnEnum
 
 
+class ExampleException(ValueError):
+    """This is a custom exception class."""
+
+
 def a_public_function(required: int, optional: Optional[str] = None) -> AClass:
     """This is a docstring for the public function.
+
+    This is a multiline comment that checks that things are appended
+    together correctly with a space.
 
     Example:
         ```python
@@ -36,5 +43,6 @@ def _a_private_function():
 __all__ = [
     "a_public_function",
     "AClass",
+    "ExampleException",
     "AnEnum",
 ]

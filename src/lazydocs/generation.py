@@ -52,7 +52,7 @@ _FUNC_TEMPLATE = """
 
 
 _CLASS_TEMPLATE = """
-{section} <kbd>class</kbd> `{header}`
+{section} <kbd>{kind}</kbd> `{header}`
 {doc}
 {init}
 {variables}
@@ -175,8 +175,6 @@ def _get_function_signature(
                     )
                     argument = "=".join(argument_split)
             arguments.append(argument)
-    else:
-        print("Seems like function " + name + " does not have any signature")
 
     signature = name + "("
     if wrap_arguments:
@@ -192,9 +190,9 @@ def _get_function_signature(
     return signature
 
 
-def _order_by_line_nos(objs: Any, line_nos: List[int]) -> List[str]:
+def _order_by_index(objs: Any, index: List[int]) -> List[str]:
     """Orders the set of `objs` by `line_nos`."""
-    ordering = sorted(range(len(line_nos)), key=line_nos.__getitem__)
+    ordering = sorted(range(len(index)), key=index.__getitem__)
     return [objs[i] for i in ordering]
 
 
@@ -233,21 +231,6 @@ def to_md_file(
     print("Writing {}.".format(md_file))
     with open(os.path.join(out_path, md_file), "w", encoding="utf-8") as f:
         f.write(markdown_str)
-
-
-def _code_snippet(snippet: str) -> str:
-    """Generates a markdown code snippet based on python code.
-
-    Args:
-        snippet (str): Python code.
-
-    Returns:
-        str: Markdown code snippet.
-    """
-    result = "```python\n"
-    result += snippet + "\n"
-    result += "```\n\n"
-    return result
 
 
 def _get_line_no(obj: Any) -> Optional[int]:
@@ -364,6 +347,8 @@ def _doc2md(obj: Any) -> str:
     snippet_indent = 0
 
     for line in doc.split("\n"):
+        is_header = False
+
         indent = len(line) - len(line.lstrip())
         if not md_code_snippet and not literal_block:
             line = line.lstrip()
@@ -379,7 +364,7 @@ def _doc2md(obj: Any) -> str:
             or _RE_BLOCKSTART_TEXT.match(line)
             or _RE_QUOTE_TEXT.match(line)
         ):
-            # start of a new block
+            is_header = True
             blockindent = indent
 
             if quote_block:
@@ -454,6 +439,8 @@ def _doc2md(obj: Any) -> str:
             out.append("\n\n")
         elif not line and quote_block:
             out.append("\n>")
+        elif not quote_block and not is_header:
+            out.append(" ")
 
     return "".join(out)
 
@@ -518,11 +505,11 @@ class MarkdownGenerator(object):
         src_path = Path(os.path.abspath(path)).relative_to(src_root_path).as_posix()
         if append_base and self.src_base_url:
             base = self.src_base_url
-            if base.endswith('/'):
+            if base.endswith("/"):
                 base = base[:-1]
-            if src_path.startswith('/'):
+            if src_path.startswith("/"):
                 src_path = src_path[1:]
-            src_path = f'{base}/{src_path}'
+            src_path = f"{base}/{src_path}"
 
         lineno = _get_line_no(obj)
         anchor = "" if lineno is None else "#L{}".format(lineno)
@@ -662,11 +649,18 @@ class MarkdownGenerator(object):
 
         variables = []
 
-        # Handle enumerations
+        # Handle different kinds of classes
         if issubclass(cls, Enum):
+            kind = "enum"
             sectionheader = "#" * (depth + 1)
             values = "\n".join("- **%s** = %s" % (obj.name, obj.value) for obj in cls)
-            variables.append(_SEPARATOR + "%s <kbd>values</kbd>\n%s" % (sectionheader, values))
+            variables.append(
+                _SEPARATOR + "%s <kbd>values</kbd>\n%s" % (sectionheader, values)
+            )
+        elif issubclass(cls, Exception):
+            kind = "exception"
+        else:
+            kind = "class"
 
         for name, obj in inspect.getmembers(
             cls, lambda a: not (inspect.isroutine(a) or inspect.ismethod(a))
@@ -717,6 +711,7 @@ class MarkdownGenerator(object):
                     methods.append(_SEPARATOR + function_md)
 
         markdown = _CLASS_TEMPLATE.format(
+            kind=kind,
             section=section,
             header=header,
             doc=doc if doc else "",
@@ -751,8 +746,8 @@ class MarkdownGenerator(object):
         path = self._get_src_path(module)
         found = []
 
-        exported = getattr(module, "__all__", [])
-        if exported:
+        exported = getattr(module, "__all__", None)
+        if exported is not None:
             print(f"Exported objects in '{modname}': {', '.join(exported)}")
 
         self.generated_objects.append(
@@ -767,57 +762,80 @@ class MarkdownGenerator(object):
         )
 
         classes: List[str] = []
-        line_nos: List[int] = []
+        index: List[int] = []
         for name, obj in inspect.getmembers(module, inspect.isclass):
-            # handle classes
             found.append(name)
             if name.startswith("_"):
                 continue
-            if name not in exported and hasattr(obj, "__module__") and obj.__module__ != modname:
+            if exported is not None and name not in exported:
+                continue
+            if (
+                exported is None
+                and hasattr(obj, "__module__")
+                and obj.__module__ != modname
+            ):
                 continue
 
             class_markdown = self.class2md(obj, depth=depth + 1)
             if class_markdown:
                 classes.append(_SEPARATOR + class_markdown)
-                line_nos.append(_get_line_no(obj) or 0)
+                if exported is None:
+                    index.append(_get_line_no(obj) or 0)
+                else:
+                    index.append(exported.index(name))
 
-        classes = _order_by_line_nos(classes, line_nos)
+        classes = _order_by_index(classes, index)
 
         functions: List[str] = []
-        line_nos = []
+        index = []
         for name, obj in inspect.getmembers(module, inspect.isfunction):
-            # handle functions
             found.append(name)
             if name.startswith("_"):
                 continue
-            if name not in exported and hasattr(obj, "__module__") and obj.__module__ != modname:
+            if exported is not None and name not in exported:
+                continue
+            if (
+                exported is None
+                and hasattr(obj, "__module__")
+                and obj.__module__ != modname
+            ):
                 continue
 
             function_md = self.func2md(obj, depth=depth + 1)
             if function_md:
                 functions.append(_SEPARATOR + function_md)
-                line_nos.append(_get_line_no(obj) or 0)
+                if exported is None:
+                    index.append(_get_line_no(obj) or 0)
+                else:
+                    index.append(exported.index(name))
 
-        functions = _order_by_line_nos(functions, line_nos)
+        functions = _order_by_index(functions, index)
 
         variables: List[str] = []
-        line_nos = []
+        index = []
         for name, obj in module.__dict__.items():
             if name.startswith("_") or name in found:
                 continue
-            if name not in exported:
+            if exported is not None and name not in exported:
+                continue
+            if exported is None:
                 if hasattr(obj, "__module__") and obj.__module__ != modname:
                     continue
                 if hasattr(obj, "__name__") and not obj.__name__.startswith(modname):
                     continue
+
             comments = inspect.getcomments(obj)
             comments = ": %s" % comments if comments else ""
             variables.append("- **%s**%s" % (name, comments))
-            line_nos.append(_get_line_no(obj) or 0)
 
-        variables = _order_by_line_nos(variables, line_nos)
+            if exported is None:
+                index.append(_get_line_no(obj) or 0)
+            else:
+                index.append(exported.index(name))
+
+        variables = _order_by_index(variables, index)
         if variables:
-            new_list = ["\n**Global Variables**", "---------------", *variables]
+            new_list = ["\n**Variables**", "---------------", *variables]
             variables = new_list
 
         markdown = _MODULE_TEMPLATE.format(
@@ -955,9 +973,10 @@ def generate_docs(
             if src_root_path and src_base_url is None and not stdout_mode:
                 # Set base url to be relative to the git root folder based on output_path
                 src_base_url = os.path.relpath(
-                    src_root_path, os.path.abspath(output_path))
-                if sys.platform == 'win32':
-                    src_base_url = src_base_url.replace('\\', '/')
+                    src_root_path, os.path.abspath(output_path)
+                )
+                if sys.platform == "win32":
+                    src_base_url = src_base_url.replace("\\", "/")
         except Exception:
             # Ignore all exceptions
             pass
@@ -983,7 +1002,8 @@ def generate_docs(
             for loader, module_name, _ in pkgutil.walk_packages([path]):
                 if _is_module_ignored(module_name, ignored_modules):
                     # Add module to ignore list, so submodule will also be ignored
-                    print(f"Ignoring module: {module_name}")
+                    if not stdout_mode:
+                        print(f"Ignoring module: {module_name}")
                     ignored_modules.append(module_name)
                     continue
 
