@@ -32,8 +32,8 @@ _IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
 
 # String templates
 
-_SOURCE_BADGE_TEMPLATE = """
-<a href="{path}"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+_SOURCE_BADGE_TEMPLATE = """\
+ [![Source](https://img.shields.io/badge/-source-cccccc?style=flat-square)]({path})
 """
 
 _SEPARATOR = """
@@ -41,7 +41,7 @@ _SEPARATOR = """
 """
 
 _FUNC_TEMPLATE = """
-{section} <kbd>{func_type}</kbd> `{header}`
+{section} {func_type} `{header}`{badge}
 
 ```python
 {funcdef}
@@ -50,9 +50,8 @@ _FUNC_TEMPLATE = """
 {doc}
 """
 
-
 _CLASS_TEMPLATE = """
-{section} <kbd>{kind}</kbd> `{header}`
+{section} {kind} `{header}`{badge}
 {doc}
 {init}
 {variables}
@@ -60,8 +59,13 @@ _CLASS_TEMPLATE = """
 {methods}
 """
 
+_VARIABLES_TEMPLATE = """
+{section} Variables
+{variables}
+"""
+
 _MODULE_TEMPLATE = """
-{section} <kbd>module</kbd> `{header}`
+{section} module `{header}`{badge}
 {doc}
 {global_vars}
 {functions}
@@ -347,8 +351,6 @@ def _doc2md(obj: Any) -> str:
     snippet_indent = 0
 
     for line in doc.split("\n"):
-        is_header = False
-
         indent = len(line) - len(line.lstrip())
         if not md_code_snippet and not literal_block:
             line = line.lstrip()
@@ -364,7 +366,6 @@ def _doc2md(obj: Any) -> str:
             or _RE_BLOCKSTART_TEXT.match(line)
             or _RE_QUOTE_TEXT.match(line)
         ):
-            is_header = True
             blockindent = indent
 
             if quote_block:
@@ -397,7 +398,7 @@ def _doc2md(obj: Any) -> str:
             literal_block = True
             out.append(line.replace("::", ":\n```"))
         elif quote_block:
-            out.append(line.strip())
+            out.append(line.strip() + " ")
         elif line.strip().startswith("-"):
             # Allow bullet lists
             out.append("\n" + (" " * indent) + line)
@@ -431,6 +432,8 @@ def _doc2md(obj: Any) -> str:
                 # indent has changed, if not empty line, break literal block
                 line = "```\n" + line
                 literal_block = False
+            if not literal_block:
+                line += " "
             out.append(line)
 
         if md_code_snippet:
@@ -439,10 +442,11 @@ def _doc2md(obj: Any) -> str:
             out.append("\n\n")
         elif not line and quote_block:
             out.append("\n>")
-        elif not quote_block and not is_header:
-            out.append(" ")
 
-    return "".join(out)
+    # Remove trailing whitespace from lines
+    content = "\n".join(line.rstrip() for line in "".join(out).splitlines())
+
+    return content
 
 
 class MarkdownGenerator(object):
@@ -485,7 +489,13 @@ class MarkdownGenerator(object):
             return ""
 
         try:
-            path = os.path.abspath(inspect.getsourcefile(obj))  # type: ignore
+            src_file = inspect.getsourcefile(obj)
+            if not src_file:
+                return ""
+            if src_file == "<string>":
+                return ""
+
+            path = os.path.abspath(src_file)
         except Exception:
             return ""
 
@@ -590,13 +600,11 @@ class MarkdownGenerator(object):
         markdown = _FUNC_TEMPLATE.format(
             section=section,
             header=header,
+            badge=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
             funcdef=funcdef,
             func_type=func_type,
             doc=doc if doc else "*No documentation found.*",
         )
-
-        if path:
-            markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
 
         return markdown
 
@@ -654,9 +662,7 @@ class MarkdownGenerator(object):
             kind = "enum"
             sectionheader = "#" * (depth + 1)
             values = "\n".join("- **%s** = %s" % (obj.name, obj.value) for obj in cls)
-            variables.append(
-                _SEPARATOR + "%s <kbd>values</kbd>\n%s" % (sectionheader, values)
-            )
+            variables.append(_SEPARATOR + "%s values\n%s" % (sectionheader, values))
         elif issubclass(cls, Exception):
             kind = "exception"
         else:
@@ -673,8 +679,7 @@ class MarkdownGenerator(object):
                     property_name = name
                 variables.append(
                     _SEPARATOR
-                    + "\n%s <kbd>property</kbd> %s%s\n"
-                    % (subsection, property_name, comments)
+                    + "\n%s property %s%s\n" % (subsection, property_name, comments)
                 )
 
         handlers = []
@@ -690,8 +695,7 @@ class MarkdownGenerator(object):
                     handler_name = name
 
                 handlers.append(
-                    _SEPARATOR
-                    + "\n%s <kbd>handler</kbd> %s\n" % (subsection, handler_name)
+                    _SEPARATOR + "\n%s handler %s\n" % (subsection, handler_name)
                 )
 
         methods = []
@@ -714,15 +718,13 @@ class MarkdownGenerator(object):
             kind=kind,
             section=section,
             header=header,
+            badge=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
             doc=doc if doc else "",
             init=init,
             variables="".join(variables),
             handlers="".join(handlers),
             methods="".join(methods),
         )
-
-        if path:
-            markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
 
         return markdown
 
@@ -830,22 +832,23 @@ class MarkdownGenerator(object):
             else:
                 index.append(exported.index(name))
 
+        variables_section = ""
         variables = _order_by_index(variables, index)
         if variables:
-            new_list = ["\n**Variables**", "---------------", *variables]
-            variables = new_list
+            variables_section = _VARIABLES_TEMPLATE.format(
+                section="#" * (depth + 1),
+                variables="\n".join(variables),
+            )
 
         markdown = _MODULE_TEMPLATE.format(
-            header=modname,
             section="#" * depth,
+            header=modname,
+            badge=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
             doc=doc,
-            global_vars="\n".join(variables) if variables else "",
+            global_vars=variables_section,
             functions="\n".join(functions) if functions else "",
             classes="".join(classes) if classes else "",
         )
-
-        if path:
-            markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
 
         return markdown
 
@@ -1060,7 +1063,6 @@ def generate_docs(
             # Path seems to be an import
             obj = locate(path)
             if obj is not None:
-
                 # TODO: function to get path to file whatever the object is
                 # if validate:
                 #     subprocess.call(

@@ -1,7 +1,10 @@
 from typing import Optional
 
 from ._class import AClass
+from ._dataclass import ADataClass
 from ._types import AnEnum
+
+GLOBAL_VAR = "This is some value"
 
 
 class ExampleException(ValueError):
@@ -21,6 +24,11 @@ def a_public_function(required: int, optional: Optional[str] = None) -> AClass:
         obj = a_public_function(100)
         print(obj.enum_value)
         ```
+
+    Note:
+        This is a literal block that is quite long and
+        it also has a line break, which should make it
+        into a space.
 
     Arguments:
         required: Something that we need
@@ -45,4 +53,6 @@ __all__ = [
     "AClass",
     "ExampleException",
     "AnEnum",
+    "ADataClass",
+    "GLOBAL_VAR",
 ]
