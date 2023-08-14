@@ -17,6 +17,8 @@ def a_public_function(required: int, optional: Optional[str] = None) -> AClass:
     This is a multiline comment that checks that things are appended
     together correctly with a space.
 
+    This is a second paragraph that should be separate.
+
     Example:
         ```python
         from example import a_public_function

@@ -438,7 +438,7 @@ def _doc2md(obj: Any) -> str:
 
         if md_code_snippet:
             out.append("\n")
-        elif not line and not quote_block:
+        elif not line.strip() and not quote_block:
             out.append("\n\n")
         elif not line and quote_block:
             out.append("\n>")
