@@ -45,7 +45,7 @@ setup(
     package_dir={"": "src"},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     zip_safe=False,
-    install_requires=["typer"],
+    install_requires=["typer", "mdformat-gfm"],
     # deprecated: dependency_links=dependency_links,
     extras_require={
         # extras can be installed via: pip install package[dev]
@@ -61,7 +61,6 @@ setup(
             "black",
             "pydocstyle",
             "isort",
-            "mdformat-gfm",
             # lazydocs - do not add, otherwise the generation will not work
         ],
     },
