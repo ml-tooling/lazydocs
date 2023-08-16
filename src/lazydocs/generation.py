@@ -15,6 +15,8 @@ from pathlib import Path
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
 
+import mdformat
+
 _RE_BLOCKSTART_LIST = re.compile(
     r"(Args:|Arg:|Arguments:|Parameters:|Kwargs:|Attributes:|Returns:|Yields:|Kwargs:|Raises:).{0,2}$",
     re.IGNORECASE,
@@ -100,7 +102,7 @@ nav:
 def _to_source_link(path: str) -> str:
     filename = path.rsplit("/", 1)[-1]
     filename = ":".join(filename.rsplit("#L", 1))
-    return "**Source:** [`%s`](%s)" % (filename, path)
+    return "\n**Source:** [`%s`](%s)\n" % (filename, path)
 
 
 def _get_function_signature(
@@ -210,6 +212,7 @@ def to_md_file(
     out_path: str = ".",
     watermark: bool = True,
     disable_markdownlint: bool = True,
+    pretty: bool = True,
 ) -> None:
     """Creates an API docs file from a provided text.
 
@@ -235,6 +238,9 @@ def to_md_file(
         markdown_str += _WATERMARK_TEMPLATE.format(
             date=datetime.date.today().strftime("%d %b %Y")
         )
+
+    if pretty:
+        markdown_str = mdformat.text(markdown_str)
 
     print("Writing {}.".format(md_file))
     with open(os.path.join(out_path, md_file), "w", encoding="utf-8") as f:

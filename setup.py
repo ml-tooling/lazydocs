@@ -61,6 +61,7 @@ setup(
             "black",
             "pydocstyle",
             "isort",
+            "mdformat-gfm",
             # lazydocs - do not add, otherwise the generation will not work
         ],
     },
