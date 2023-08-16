@@ -8,13 +8,12 @@ import os
 import pkgutil
 import re
 import subprocess
+import sys
 import types
-import urllib.parse
 from enum import Enum
 from pathlib import Path
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
-import sys
 
 _RE_BLOCKSTART_LIST = re.compile(
     r"(Args:|Arg:|Arguments:|Parameters:|Kwargs:|Attributes:|Returns:|Yields:|Kwargs:|Raises:).{0,2}$",
@@ -32,16 +31,13 @@ _IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
 
 # String templates
 
-_SOURCE_BADGE_TEMPLATE = """\
- [![Source](https://img.shields.io/badge/-source-cccccc?style=flat-square)]({path})
-"""
-
 _SEPARATOR = """
 ---
 """
 
 _FUNC_TEMPLATE = """
-{section} {func_type} `{header}`{badge}
+{section} {func_type} `{header}`
+{source}
 
 ```python
 {funcdef}
@@ -51,7 +47,8 @@ _FUNC_TEMPLATE = """
 """
 
 _CLASS_TEMPLATE = """
-{section} {kind} `{header}`{badge}
+{section} {kind} `{header}`
+{source}
 {doc}
 {init}
 {variables}
@@ -65,7 +62,8 @@ _VARIABLES_TEMPLATE = """
 """
 
 _MODULE_TEMPLATE = """
-{section} module `{header}`{badge}
+{section} module `{header}`
+{source}
 {doc}
 {global_vars}
 {functions}
@@ -97,6 +95,12 @@ nav:
     - Overview: {overview_file}
     - ...
 """
+
+
+def _to_source_link(path: str) -> str:
+    filename = path.rsplit("/", 1)[-1]
+    filename = ":".join(filename.rsplit("#L", 1))
+    return "**Source:** [`%s`](%s)" % (filename, path)
 
 
 def _get_function_signature(
@@ -600,7 +604,7 @@ class MarkdownGenerator(object):
         markdown = _FUNC_TEMPLATE.format(
             section=section,
             header=header,
-            badge=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
+            source=_to_source_link(path) if path else "",
             funcdef=funcdef,
             func_type=func_type,
             doc=doc if doc else "*No documentation found.*",
@@ -662,7 +666,7 @@ class MarkdownGenerator(object):
             kind = "enum"
             sectionheader = "#" * (depth + 1)
             values = "\n".join("- **%s** = %s" % (obj.name, obj.value) for obj in cls)
-            variables.append(_SEPARATOR + "%s values\n%s" % (sectionheader, values))
+            variables.append("%s Values\n%s" % (sectionheader, values))
         elif issubclass(cls, Exception):
             kind = "exception"
         else:
@@ -678,8 +682,7 @@ class MarkdownGenerator(object):
                 if self.remove_package_prefix:
                     property_name = name
                 variables.append(
-                    _SEPARATOR
-                    + "\n%s property %s%s\n" % (subsection, property_name, comments)
+                    "\n%s property `%s`%s\n" % (subsection, property_name, comments)
                 )
 
         handlers = []
@@ -718,7 +721,7 @@ class MarkdownGenerator(object):
             kind=kind,
             section=section,
             header=header,
-            badge=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
+            source=_to_source_link(path) if path else "",
             doc=doc if doc else "",
             init=init,
             variables="".join(variables),
@@ -843,7 +846,7 @@ class MarkdownGenerator(object):
         markdown = _MODULE_TEMPLATE.format(
             section="#" * depth,
             header=modname,
-            badge=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
+            source=_to_source_link(path) if path else "",
             doc=doc,
             global_vars=variables_section,
             functions="\n".join(functions) if functions else "",
