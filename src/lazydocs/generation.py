@@ -305,22 +305,6 @@ def _is_module_ignored(module_name: str, ignored_modules: List[str]) -> bool:
     return False
 
 
-def _get_src_root_path(obj: Any) -> str:
-    """Get the root path to a imported module.
-
-    Args:
-        obj (Any): Imported python object.
-
-    Returns:
-        str: Full source root path to the selected object.
-    """
-    module = obj
-    if not isinstance(obj, types.ModuleType):
-        module = inspect.getmodule(obj)
-    root_package = module.__name__.split(".")[0]
-    return module.__file__.split(root_package)[0] + root_package
-
-
 def _get_doc_summary(obj: Any) -> str:
     # First line should contain the summary
     return _get_docstring(obj).split("\n")[0]
@@ -401,6 +385,7 @@ def _doc2md(obj: Any) -> str:
             else:
                 md_code_snippet = True
                 snippet_indent = indent
+                out.append("\n")
 
             out.append(line)
         elif line.strip().endswith("::"):

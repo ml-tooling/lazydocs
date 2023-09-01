@@ -19,6 +19,11 @@ def a_public_function(required: int, optional: Optional[str] = None) -> AClass:
 
     This is a second paragraph that should be separate.
 
+    This is not an actual header, but has a code-block underneath:
+    ```python
+        print("Let's hope this works!")
+    ```
+
     Example:
         ```python
         from example import a_public_function

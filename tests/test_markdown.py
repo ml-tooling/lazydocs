@@ -74,3 +74,8 @@ def test_multiple_paragraphs(markdown):
 
 def test_source_link(markdown):
     assert "_class.py:9" in markdown
+
+
+def test_code_spacing(markdown):
+    # Ensure no code-blocks are escaped
+    assert "\\`" not in markdown
