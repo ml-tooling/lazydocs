@@ -42,6 +42,11 @@ def generate(
         False,
         help="If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.",
     ),
+    output_format: Optional[str] = typer.Option(
+        None,
+        help="The output format for the creation of the markdown files. This may be 'md' or 'mdx'. Defaults to md.",
+    )
+        
 ) -> None:
     """Generates markdown documentation for your Python project based on Google-style docstrings."""
 
@@ -52,6 +57,7 @@ def generate(
             src_base_url=src_base_url,
             remove_package_prefix=remove_package_prefix,
             ignored_modules=ignored_modules,
+            output_format=output_format,
             overview_file=overview_file,
             watermark=watermark,
             validate=validate,
