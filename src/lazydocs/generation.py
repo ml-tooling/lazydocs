@@ -31,6 +31,8 @@ _RE_ARGSTART = re.compile(r"(.{1,}?):(.{2,})", re.IGNORECASE)
 
 _IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
 
+_SOURCE_BADGE_TEMPLATE = '<a href="{path}"><img align="right" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>'
+
 # String templates
 
 _SEPARATOR = """
@@ -38,19 +40,13 @@ _SEPARATOR = """
 """
 
 _FUNC_TEMPLATE = """
-{section} {func_type} `{header}`
-{source}
-
-```python
-{funcdef}
-```
+{section} {func_type} `{header}` {source}
 
 {doc}
 """
 
 _CLASS_TEMPLATE = """
-{section} {kind} `{header}`
-{source}
+{section} {kind} `{header}` {source}
 {doc}
 {init}
 {variables}
@@ -64,8 +60,7 @@ _VARIABLES_TEMPLATE = """
 """
 
 _MODULE_TEMPLATE = """
-{section} module `{header}`
-{source}
+{section} module `{header}` {source}
 {doc}
 {global_vars}
 {functions}
@@ -595,7 +590,7 @@ class MarkdownGenerator(object):
         markdown = _FUNC_TEMPLATE.format(
             section=section,
             header=header,
-            source=_to_source_link(path) if path else "",
+            source=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
             funcdef=funcdef,
             func_type=func_type,
             doc=doc if doc else "*No documentation found.*",
@@ -712,7 +707,7 @@ class MarkdownGenerator(object):
             kind=kind,
             section=section,
             header=header,
-            source=_to_source_link(path) if path else "",
+            source=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
             doc=doc if doc else "",
             init=init,
             variables="".join(variables),
@@ -837,7 +832,7 @@ class MarkdownGenerator(object):
         markdown = _MODULE_TEMPLATE.format(
             section="#" * depth,
             header=modname,
-            source=_to_source_link(path) if path else "",
+            source=_SOURCE_BADGE_TEMPLATE.format(path=path) if path else "",
             doc=doc,
             global_vars=variables_section,
             functions="\n".join(functions) if functions else "",
