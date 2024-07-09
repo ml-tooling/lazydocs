@@ -623,11 +623,12 @@
         },
         "zipp": {
             "hashes": [
-                "sha256:957cfda87797e389580cb8b9e3870841ca991e2125350677b2ca83a0e99390a3",
-                "sha256:f5812b1e007e48cff63449a5e9f4e7ebea716b4111f9c4f9a645f91d579bf0c4"
+                "sha256:2828e64edb5386ea6a52e7ba7cdb17bb30a73a858f5eb6eb93d8d36f5ea26091",
+                "sha256:35427f6d5594f4acf82d25541438348c26736fa9b3afa2754bcd63cdb99d8e8f"
             ],
-            "markers": "python_version >= '3.6'",
-            "version": "==3.5.0"
+            "index": "pypi",
+            "markers": "python_version >= '3.8'",
+            "version": "==3.19.1"
         }
     }
 }
