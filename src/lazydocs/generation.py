@@ -429,13 +429,16 @@ def _doc2md(obj: Any) -> str:
                 argindent = indent
             elif arg_list and not literal_block and _RE_ARGSTART.match(line):
                 # start of an exception-type block
-                out.append(
-                    "\n"
-                    + " " * blockindent
-                    + " - "
-                    + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
-                )
-                argindent = indent
+                if indent > argindent:
+                    out.append(" " + line)
+                else:
+                    out.append(
+                        "\n"
+                        + " " * blockindent
+                        + " - "
+                        + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
+                    )
+                    argindent = indent
             elif indent > argindent:
                 # attach docs text of argument
                 # * (blockindent + 2)
