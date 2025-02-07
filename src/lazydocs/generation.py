@@ -9,20 +9,31 @@ import pkgutil
 import re
 import subprocess
 import types
+from dataclasses import dataclass
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
 
 _RE_BLOCKSTART_LIST = re.compile(
-    r"(Args:|Arg:|Arguments:|Parameters:|Kwargs:|Attributes:|Returns:|Yields:|Kwargs:|Raises:).{0,2}$",
+    r"^(Args:|Arg:|Arguments:|Parameters:|Kwargs:|Attributes:|Returns:|Yields:|Kwargs:|Raises:).{0,2}$",
     re.IGNORECASE,
 )
 
-_RE_BLOCKSTART_TEXT = re.compile(r"(Examples:|Example:|Todo:).{0,2}$", re.IGNORECASE)
+_RE_BLOCKSTART_TEXT = re.compile(
+    r"^(Example[s]?:|Todo:|Reference[s]?:).{0,2}$",
+    re.IGNORECASE
+)
 
-_RE_QUOTE_TEXT = re.compile(r"(Notes:|Note:).{0,2}$", re.IGNORECASE)
+# https://github.com/orgs/community/discussions/16925
+# https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts
+_RE_ADMONITION_TEXT = re.compile(
+    r"^(?:\[\!?)?(NOTE|TIP|IMPORTANT|WARNING|CAUTION)s?[\]:][^:]?[ ]*(.*)$",
+    re.IGNORECASE
+)
 
-_RE_TYPED_ARGSTART = re.compile(r"([\w\[\]_]{1,}?)\s*?\((.*?)\):(.{2,})", re.IGNORECASE)
-_RE_ARGSTART = re.compile(r"(.{1,}?):(.{2,})", re.IGNORECASE)
+_RE_TYPED_ARGSTART = re.compile(r"^([\w\[\]_]{1,}?)[ ]*?\((.*?)\):[ ]+(.{2,})", re.IGNORECASE)
+_RE_ARGSTART = re.compile(r"^(.+):[ ]+(.{2,})$", re.IGNORECASE)
+
+_RE_CODE_TEXT = re.compile(r"^```[\w\-\.]*[ ]*$", re.IGNORECASE)
 
 _IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
 
@@ -361,106 +372,239 @@ def _doc2md(obj: Any) -> str:
     # doc = getdoc(func) or ""
     doc = _get_docstring(obj)
 
+    padding = 0
     blockindent = 0
-    argindent = 1
+    argindent = 0
     out = []
     arg_list = False
-    literal_block = False
+    section_block = False
+    block_exit = False
     md_code_snippet = False
-    quote_block = False
+    admonition_block = None
+    literal_block = None
+    doctest_block = None
+    prev_blank_line_count = 0
+    offset = 0
 
-    for line in doc.split("\n"):
+    @dataclass
+    class SectionBlock():
+        line_index: int
+        indent: int
+        offset: int
+
+    def _get_section_offset(lines: list, start_index: int, blockindent: int):
+        """Determine base padding offset for section.
+
+        Args:
+            lines (list): Line lists.
+            start_index (int): Index of lines to start parsing.
+            blockindent (int): Reference block indent of section.
+
+        Returns:
+            int: Padding offset.
+        """
+        offset = []
+        try:
+            for line in lines[start_index:]:
+                indent = len(line) - len(line.lstrip())
+                if not line.strip():
+                    continue
+                if indent <= blockindent:
+                    return -min(offset) if offset else 0
+                if indent > blockindent:
+                    offset.append(indent - blockindent)
+        except IndexError:
+            return 0
+        return -min(offset) if offset else 0
+
+    def _lines_isvalid(lines: list, start_index: int, blockindent: int,
+                            allow_same_level: bool = False,
+                            require_next_is_blank: bool = False,
+                            max_blank: int = None):
+        """Determine following lines fit section rules.
+
+        Args:
+            lines (list): Line lists.
+            start_index (int): Index of lines to start parsing.
+            blockindent (int): Reference block indent of section.
+            allow_same_level (bool, optional): Allow line indent as blockindent. Defaults to False.
+            require_next_is_blank (bool, optional): Require first parsed line to be blank. Defaults to False.
+            max_blank (int, optional): Max number of allowable continuous blank lines in section. Defaults to None.
+
+        Returns:
+            bool: Validity of tested lines.
+        """
+        prev_blank = 0
+        try:
+            for index, line in enumerate(lines[start_index:]):
+                indent = len(line) - len(line.lstrip())
+                line = line.strip()
+                if require_next_is_blank and index == 0 and line:
+                    return False
+                if line:
+                    prev_blank = 0
+                    if indent <= blockindent:
+                        if allow_same_level and indent == blockindent:
+                            return True
+                        return False
+                    return True
+                if max_blank is not None:
+                    if not line:
+                        prev_blank += 1
+                    if prev_blank > max_blank:
+                        return False
+        except IndexError:
+            pass
+        return False
+
+    docstring = doc.split("\n")
+    for line_indx, line in enumerate(docstring):
         indent = len(line) - len(line.lstrip())
-        if not md_code_snippet and not literal_block:
-            line = line.lstrip()
+        line = line.lstrip()
+        offset = 0
 
-        if line.startswith(">>>"):
-            # support for doctest
-            line = line.replace(">>>", "```") + "```"
+        # Exit condition for args and section blocks
+        if (any([arg_list, section_block])
+                and all([indent <= blockindent,
+                         prev_blank_line_count,
+                         line])):
+            arg_list = False if arg_list else arg_list
+            section_block = False if section_block else section_block
+            blockindent = 0
 
-        if (
-            _RE_BLOCKSTART_LIST.match(line)
-            or _RE_BLOCKSTART_TEXT.match(line)
-            or _RE_QUOTE_TEXT.match(line)
-        ):
+        admonition_result = _RE_ADMONITION_TEXT.match(line)
+        blockstart_result = _RE_BLOCKSTART_LIST.match(line)
+        blocktext_result = _RE_BLOCKSTART_TEXT.match(line)
+
+        if admonition_result and not (md_code_snippet or admonition_block):
+            # Admonition block entry condition
+            admonition_block = SectionBlock(
+                line_indx, indent, _get_section_offset(docstring,
+                                                       line_indx + 1,
+                                                       indent))
+            line = "[!{}] {}".format(admonition_result.group(1).upper(),
+                                     admonition_result.group(2))
+
+        # Entry conditions and block offsets
+        if _RE_CODE_TEXT.match(line):
+            # Code block, detect "```"
+            md_code_snippet = not md_code_snippet
+        elif line.startswith(">>>") and not doctest_block:
+            # Doctest Entry condition
+            line = "```python\n" + line
+            if _lines_isvalid(docstring, line_indx + 1, indent, True, False, 1):
+                doctest_block = SectionBlock(line_indx, indent, 0)
+                md_code_snippet = True
+            else:
+                line = line + "\n```"
+        elif doctest_block and \
+                not _lines_isvalid(docstring, line_indx + 1, doctest_block.indent,
+                                      True, False, 1):
+            # Doctest block Exit Condition
+            offset = doctest_block.indent - indent
+            line = " " * (indent - doctest_block.indent +
+                          doctest_block.offset) + line + "\n```"
+            block_exit = True
+        elif line.endswith("::") and not (literal_block) and \
+                _lines_isvalid(docstring, line_indx + 1, indent, False, True, None):
+            # Literal Block Entry Conditions
+            literal_block = SectionBlock(
+                line_indx, indent,
+                _get_section_offset(docstring, line_indx + 1, indent))
+            line = line.replace("::", "") if line.startswith(
+                "::") else line.replace("::", ":")
+            md_code_snippet = True
+        elif literal_block:
+            if line_indx == literal_block.line_index + 1 and not line:
+                # Literal block post entry
+                line = "```" + line
+                indent = literal_block.indent
+            elif not _lines_isvalid(docstring, line_indx + 1, literal_block.indent,
+                                       False, False, None):
+                # Literal block exit condition
+                offset += literal_block.indent - indent
+                line = " " * (indent - literal_block.indent +
+                              literal_block.offset) + line + "\n```"
+                block_exit = True
+            elif line:
+                offset += literal_block.offset
+
+        # Admonition block processing and exit condition
+        if admonition_block:
+            if md_code_snippet:
+                if literal_block:
+                    padding = max(indent - literal_block.indent, 0)
+                elif doctest_block:
+                    padding = max(indent - doctest_block.indent, 0)
+                else:
+                    padding = max(indent - admonition_block.indent
+                                  + admonition_block.offset, 0)
+                line = " " * (padding + offset) + line
+            offset = admonition_block.indent - indent
+            line = "> {}".format(line.replace("\n", "\n> "))
+            if not _lines_isvalid(docstring, line_indx + 1, admonition_block.indent,
+                                     False, False, None):
+                admonition_block = None
+
+        if (blockstart_result or blocktext_result):
             # start of a new block
             blockindent = indent
+            arg_list = bool(blockstart_result)
+            section_block = bool(blocktext_result)
 
-            if quote_block:
-                quote_block = False
-
-            if literal_block:
-                # break literal block
-                out.append("```\n")
-                literal_block = False
-
-            out.append("\n\n**{}**\n".format(line.strip()))
-
-            arg_list = bool(_RE_BLOCKSTART_LIST.match(line))
-
-            if _RE_QUOTE_TEXT.match(line):
-                quote_block = True
-                out.append("\n>")
-        elif line.strip().startswith("```"):
-            # Code snippet is used
-            if md_code_snippet:
-                md_code_snippet = False
-            else:
-                md_code_snippet = True
-
-            out.append(line)
-        elif line.strip().endswith("::"):
-            # Literal Block Support: https://docutils.sourceforge.io/docs/user/rst/quickref.html#literal-blocks
-            literal_block = True
-            out.append(line.replace("::", ":\n```"))
-        elif quote_block:
-            out.append(line.strip())
-        elif line.strip().startswith("-"):
-            # Allow bullet lists
-            out.append("\n" + (" " * indent) + line)
-        elif indent > blockindent:
+            if prev_blank_line_count <= 1:
+                out.append("\n")
+            out.append("**{}**\n".format(line.strip()))
+        elif indent > blockindent and (arg_list or section_block):
             if arg_list and not literal_block and _RE_TYPED_ARGSTART.match(line):
                 # start of new argument
                 out.append(
-                    "\n"
-                    + " " * blockindent
-                    + " - "
+                    "- "
                     + _RE_TYPED_ARGSTART.sub(r"<b>`\1`</b> (\2): \3", line)
                 )
                 argindent = indent
             elif arg_list and not literal_block and _RE_ARGSTART.match(line):
                 # start of an exception-type block
                 out.append(
-                    "\n"
-                    + " " * blockindent
-                    + " - "
+                    "- "
                     + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
                 )
                 argindent = indent
             elif indent > argindent:
                 # attach docs text of argument
                 # * (blockindent + 2)
-                out.append(" " + line)
+                padding = max(indent - argindent + offset, 0)
+                out.append(" " * padding
+                           + line.replace("\n",
+                                          "\n" + " " * padding))
             else:
-                out.append(line)
+                padding = max(indent - blockindent + offset, 0)
+                out.append(line.replace("\n",
+                                        "\n" + " " * padding))
+        elif line:
+            padding = max(indent - blockindent + offset, 0)
+            out.append(" " * padding
+                       + line.replace("\n",
+                                      "\n" + " " * padding))
         else:
-            if line.strip() and literal_block:
-                # indent has changed, if not empty line, break literal block
-                line = "```\n" + line
-                literal_block = False
             out.append(line)
 
-        if md_code_snippet:
-            out.append("\n")
-        elif not line and not quote_block:
-            out.append("\n\n")
-        elif not line and quote_block:
-            out.append("\n>")
+        out.append("\n")
+
+        if block_exit:
+            block_exit = False
+            if md_code_snippet:
+                md_code_snippet = False
+            if literal_block:
+                literal_block = None
+            elif doctest_block:
+                doctest_block = None
+
+        if line.lstrip():
+            prev_blank_line_count = 0
         else:
-            out.append(" ")
-
+            prev_blank_line_count += 1
     return "".join(out)
-
 
 class MarkdownGenerator(object):
     """Markdown generator class."""
