@@ -1011,8 +1011,13 @@ def generate_docs(
                     continue
 
                 try:
-                    mod_spec = loader.find_spec(module_name)
-                    mod = importlib.util.module_from_spec(mod_spec)
+                    try:
+                        mod_spec = importlib.util.spec_from_loader(module_name, loader)
+                        mod = importlib.util.module_from_spec(mod_spec)
+                        mod_spec.loader.exec_module(mod)
+                    except AttributeError:
+                        # For older python version compatibility
+                        mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
                     module_md = generator.module2md(mod, is_mdx=is_mdx)
                     if not module_md:
                         # Module md is empty -> ignore module and all submodules
@@ -1090,8 +1095,13 @@ def generate_docs(
                             continue
 
                         try:
-                            mod_spec = loader.find_spec(module_name)
-                            mod = importlib.util.module_from_spec(mod_spec)
+                            try:
+                                mod_spec = importlib.util.spec_from_loader(module_name, loader)
+                                mod = importlib.util.module_from_spec(mod_spec)
+                                mod_spec.loader.exec_module(mod)
+                            except AttributeError:
+                                # For older python version compatibility
+                                mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
                             module_md = generator.module2md(mod, is_mdx=is_mdx)
 
                             if not module_md:
