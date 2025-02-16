@@ -45,8 +45,11 @@ def generate(
     output_format: Optional[str] = typer.Option(
         None,
         help="The output format for the creation of the markdown files. This may be 'md' or 'mdx'. Defaults to md.",
-    )
-        
+    ),
+    private_modules: bool = typer.Option(
+        False,
+        help="If `True`, all packages starting with `_` will be included.",
+    ),
 ) -> None:
     """Generates markdown documentation for your Python project based on Google-style docstrings."""
 
@@ -61,6 +64,7 @@ def generate(
             overview_file=overview_file,
             watermark=watermark,
             validate=validate,
+            private_modules=private_modules,
         )
     except Exception as ex:
         typer.echo(str(ex))

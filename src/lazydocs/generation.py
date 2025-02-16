@@ -313,9 +313,9 @@ def _is_object_ignored(obj: Any) -> bool:
     return False
 
 
-def _is_module_ignored(module_name: str, ignored_modules: List[str]) -> bool:
+def _is_module_ignored(module_name: str, ignored_modules: List[str], private_modules: bool = False) -> bool:
     """Checks if a given module is ignored."""
-    if module_name.split(".")[-1].startswith("_"):
+    if module_name.split(".")[-1].startswith("_") and module_name[1] != "_" and not private_modules:
         return True
 
     for ignored_module in ignored_modules:
@@ -1084,6 +1084,7 @@ def generate_docs(
     overview_file: Optional[str] = None,
     watermark: bool = True,
     validate: bool = False,
+    private_modules: bool = False,
 ) -> None:
     """Generates markdown documentation for provided paths based on Google-style docstrings.
 
@@ -1098,6 +1099,7 @@ def generate_docs(
         overview_file: Filename of overview file. If not provided, no overview file will be generated.
         watermark: If `True`, add a watermark with a timestamp to bottom of the markdown files.
         validate: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.
+        private_modules: If `True`, includes modules with `_` prefix.
     """
     stdout_mode = output_path.lower() == "stdout"
 
@@ -1152,11 +1154,10 @@ def generate_docs(
 
             # Generate one file for every discovered module
             for loader, module_name, _ in pkgutil.walk_packages([path]):
-                if _is_module_ignored(module_name, ignored_modules):
+                if _is_module_ignored(module_name, ignored_modules, private_modules):
                     # Add module to ignore list, so submodule will also be ignored
                     ignored_modules.append(module_name)
                     continue
-
                 try:
                     try:
                         mod_spec = importlib.util.spec_from_loader(module_name, loader)
@@ -1236,7 +1237,7 @@ def generate_docs(
                         path=obj.__path__,  # type: ignore
                         prefix=obj.__name__ + ".",  # type: ignore
                     ):
-                        if _is_module_ignored(module_name, ignored_modules):
+                        if _is_module_ignored(module_name, ignored_modules, private_modules):
                             # Add module to ignore list, so submodule will also be ignored
                             ignored_modules.append(module_name)
                             continue

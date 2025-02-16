@@ -177,6 +177,7 @@ lazydocs [OPTIONS] PATHS...
 * `--watermark / --no-watermark`: If `True`, add a watermark with a timestamp to bottom of the markdown files.  [default: True]
 * `--validate / --no-validate`: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.  [default: False]
 * `--output-format TEXT`: The output format for the creation of the markdown files. This may be 'md' or 'mdx'. Defaults to md.
+* `--private-modules / --no-private-modules`: If `True`, includes modules with "_" prefix. [default: False]
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.
 * `--help`: Show this message and exit.
