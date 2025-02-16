@@ -136,7 +136,10 @@ def _get_function_signature(
     if owner_class:
         name_parts.append(owner_class.__name__)
     if hasattr(function, "__name__"):
-        name_parts.append(function.__name__)
+        if function.__name__ == "__init__":
+            name_parts.append(_get_class_that_defined_method(function).__name__)
+        else:
+            name_parts.append(function.__name__)
     else:
         name_parts.append(type(function).__name__)
         name_parts.append("__call__")
@@ -735,7 +738,7 @@ class MarkdownGenerator(object):
                 func_type = "function"
             else:
                 # function of a class
-                func_type = "method"
+                func_type = "constructor" if escfuncname == "__init__" else "method"
 
         self.generated_objects.append(
             {
