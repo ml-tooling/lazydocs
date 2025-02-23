@@ -50,6 +50,10 @@ def generate(
         False,
         help="If `True`, all packages starting with `_` will be included.",
     ),
+    toc: bool = typer.Option(
+        False,
+        help="Include table of contents in module file. Defaults to False.",
+    ),
 ) -> None:
     """Generates markdown documentation for your Python project based on Google-style docstrings."""
 
@@ -65,6 +69,7 @@ def generate(
             watermark=watermark,
             validate=validate,
             private_modules=private_modules,
+            include_toc=toc,
         )
     except Exception as ex:
         typer.echo(str(ex))

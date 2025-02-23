@@ -178,6 +178,7 @@ lazydocs [OPTIONS] PATHS...
 * `--validate / --no-validate`: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.  [default: False]
 * `--output-format TEXT`: The output format for the creation of the markdown files. This may be 'md' or 'mdx'. Defaults to md.
 * `--private-modules / --no-private-modules`: If `True`, includes modules with "_" prefix. [default: False]
+* `--toc / --no-toc`: If `True`, includes table of contents in generated module markdown files. [default: False]
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.
 * `--help`: Show this message and exit.

@@ -62,6 +62,11 @@ _FUNC_TEMPLATE = """
 """
 
 
+_TOC_TEMPLATE = """
+## Table of Contents
+{toc}
+"""
+
 _CLASS_TEMPLATE = """
 {section} <kbd>class</kbd> `{header}`
 {doc}
@@ -74,6 +79,7 @@ _CLASS_TEMPLATE = """
 _MODULE_TEMPLATE = """
 {section} <kbd>module</kbd> `{header}`
 {doc}
+{toc}
 {global_vars}
 {functions}
 {classes}
@@ -883,13 +889,14 @@ class MarkdownGenerator(object):
 
         return markdown
 
-    def module2md(self, module: types.ModuleType, depth: int = 1, is_mdx: bool = False) -> str:
+    def module2md(self, module: types.ModuleType, depth: int = 1, is_mdx: bool = False, include_toc: bool = False) -> str:
         """Takes an imported module object and create a Markdown string containing functions and classes.
 
         Args:
             module (types.ModuleType): Selected module for markdown generation.
             depth (int, optional): Number of # to append before module heading. Defaults to 1.
             is_mdx (bool, optional): JSX support. Default to False.
+            include_toc (bool, optional): Include table of contents in module file. Defaults to False.
 
         Returns:
             str: Markdown documentation for selected module.
@@ -965,10 +972,13 @@ class MarkdownGenerator(object):
             new_list = ["\n**Global Variables**", "---------------", *variables]
             variables = new_list
 
+        toc = self.toc2md(module=module, is_mdx=is_mdx) if include_toc else ""
+
         markdown = _MODULE_TEMPLATE.format(
             header=modname,
             section="#" * depth,
             doc=doc,
+            toc=toc,
             global_vars="\n".join(variables) if variables else "",
             functions="\n".join(functions) if functions else "",
             classes="".join(classes) if classes else "",
@@ -982,13 +992,14 @@ class MarkdownGenerator(object):
 
         return markdown
 
-    def import2md(self, obj: Any, depth: int = 1, is_mdx: bool = False) -> str:
+    def import2md(self, obj: Any, depth: int = 1, is_mdx: bool = False, include_toc: bool = False) -> str:
         """Generates markdown documentation for a selected object/import.
 
         Args:
             obj (Any): Selcted object for markdown docs generation.
             depth (int, optional): Number of # to append before heading. Defaults to 1.
             is_mdx (bool, optional): JSX support. Default to False.
+            include_toc(bool, Optional): Include table of contents for module file. Defaults to False.
 
         Returns:
             str: Markdown documentation of selected object.
@@ -996,7 +1007,7 @@ class MarkdownGenerator(object):
         if inspect.isclass(obj):
             return self.class2md(obj, depth=depth, is_mdx=is_mdx)
         elif isinstance(obj, types.ModuleType):
-            return self.module2md(obj, depth=depth, is_mdx=is_mdx)
+            return self.module2md(obj, depth=depth, is_mdx=is_mdx, include_toc=include_toc)
         elif callable(obj):
             return self.func2md(obj, depth=depth, is_mdx=is_mdx)
         else:
@@ -1072,6 +1083,26 @@ class MarkdownGenerator(object):
             modules=modules_md, classes=classes_md, functions=functions_md
         )
 
+    def toc2md(self, module: types.ModuleType = None, is_mdx: bool = False) -> str:
+        """Generates table of contents for imported object."""
+        toc = []
+        for obj in self.generated_objects:
+            if module and (module.__name__ != obj["module"] or obj["type"] == "module"):
+                continue
+            # module_name = obj["module"].split(".")[-1]
+            full_name = obj["full_name"]
+            name = obj["name"]
+            if is_mdx:
+                link = "./" + obj["module"] + ".mdx#" + obj["anchor_tag"]
+            else:
+                link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
+            line = f"- [`{name}`]({link})"
+            depth = max(len(full_name.split(".")) - 1, 0)
+            if depth:
+                line = "\t" * depth + line
+            toc.append(line)
+        return _TOC_TEMPLATE.format(toc="\n".join(toc))
+
 
 def generate_docs(
     paths: List[str],
@@ -1085,6 +1116,7 @@ def generate_docs(
     watermark: bool = True,
     validate: bool = False,
     private_modules: bool = False,
+    include_toc: bool = False,
 ) -> None:
     """Generates markdown documentation for provided paths based on Google-style docstrings.
 
@@ -1166,7 +1198,7 @@ def generate_docs(
                     except AttributeError:
                         # For older python version compatibility
                         mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
-                    module_md = generator.module2md(mod, is_mdx=is_mdx)
+                    module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
                     if not module_md:
                         # Module md is empty -> ignore module and all submodules
                         # Add module to ignore list, so submodule will also be ignored
@@ -1205,7 +1237,7 @@ def generate_docs(
             spec.loader.exec_module(mod)  # type: ignore
 
             if mod:
-                module_md = generator.module2md(mod, is_mdx=is_mdx)
+                module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
                 if stdout_mode:
                     print(module_md)
                 else:
@@ -1250,7 +1282,7 @@ def generate_docs(
                             except AttributeError:
                                 # For older python version compatibility
                                 mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
-                            module_md = generator.module2md(mod, is_mdx=is_mdx)
+                            module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
 
                             if not module_md:
                                 # Module MD is empty -> ignore module and all submodules
