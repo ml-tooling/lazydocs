@@ -211,16 +211,17 @@ def to_md_file(
     Args:
         markdown_str (str): Markdown string with line breaks to write to file.
         filename (str): Filename without the .md
+        out_path (str): The output directory.
         watermark (bool): If `True`, add a watermark with a timestamp to bottom of the markdown files.
         disable_markdownlint (bool): If `True`, an inline tag is added to disable markdownlint for this file.
-        out_path (str): The output directory
+        is_mdx (bool, optional): JSX support. Default to False.
     """
     if not markdown_str:
         # Dont write empty files
         return
 
     md_file = filename
-    
+
     if is_mdx:
         if not filename.endswith(".mdx"):
             md_file = filename + ".mdx"
@@ -538,6 +539,7 @@ class MarkdownGenerator(object):
             func (Callable): Selected function (or method) for markdown generation.
             clsname (str, optional): Class name to prepend to funcname. Defaults to "".
             depth (int, optional): Number of # to append to class name. Defaults to 3.
+            is_mdx (bool, optional): JSX support. Default to False.
 
         Returns:
             str: Markdown documentation for selected function.
@@ -614,7 +616,7 @@ class MarkdownGenerator(object):
         if path:
             if is_mdx:
                 markdown = _MDX_SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
-            else:    
+            else:
                 markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
 
         return markdown
@@ -625,6 +627,7 @@ class MarkdownGenerator(object):
         Args:
             cls (class): Selected class for markdown generation.
             depth (int, optional): Number of # to append to function name. Defaults to 2.
+            is_mdx (bool, optional): JSX support. Default to False.
 
         Returns:
             str: Markdown documentation for selected class.
@@ -739,6 +742,7 @@ class MarkdownGenerator(object):
         Args:
             module (types.ModuleType): Selected module for markdown generation.
             depth (int, optional): Number of # to append before module heading. Defaults to 1.
+            is_mdx (bool, optional): JSX support. Default to False.
 
         Returns:
             str: Markdown documentation for selected module.
@@ -837,6 +841,7 @@ class MarkdownGenerator(object):
         Args:
             obj (Any): Selcted object for markdown docs generation.
             depth (int, optional): Number of # to append before heading. Defaults to 1.
+            is_mdx (bool, optional): JSX support. Default to False.
 
         Returns:
             str: Markdown documentation of selected object.
@@ -852,7 +857,14 @@ class MarkdownGenerator(object):
             return ""
 
     def overview2md(self, is_mdx: bool = False) -> str:
-        """Generates a documentation overview file based on the generated docs."""
+        """Generates a documentation overview file based on the generated docs.
+
+        Args:
+            is_mdx (bool, optional): JSX support. Default to False.
+
+        Returns:
+            str: Markdown documentation of overview file.
+        """
 
         entries_md = ""
         for obj in list(
@@ -935,6 +947,7 @@ def generate_docs(
         src_base_url: The base url of the github link. Should include branch name. All source links are generated with this prefix.
         remove_package_prefix: If `True`, the package prefix will be removed from all functions and methods.
         ignored_modules: A list of modules that should be ignored.
+        output_format: Markdown file extension and format.
         overview_file: Filename of overview file. If not provided, no overview file will be generated.
         watermark: If `True`, add a watermark with a timestamp to bottom of the markdown files.
         validate: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.
