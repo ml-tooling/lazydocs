@@ -12,6 +12,7 @@ import types
 from dataclasses import dataclass
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
+from urllib.parse import quote
 
 _RE_BLOCKSTART_LIST = re.compile(
     r"^(Args:|Arg:|Arguments:|Parameters:|Kwargs:|Attributes:|Returns:|Yields:|Kwargs:|Raises:).{0,2}$",
@@ -683,7 +684,7 @@ class MarkdownGenerator(object):
         if append_base and self.src_base_url:
             relative_path = os.path.join(self.src_base_url, relative_path)
 
-        return relative_path
+        return quote("/".join(relative_path.split("\\")), safe=":/#")
 
     def func2md(self, func: Callable, clsname: str = "", depth: int = 3, is_mdx: bool = False) -> str:
         """Takes a function (or method) and generates markdown docs.
