@@ -54,6 +54,10 @@ def generate(
         False,
         help="Include table of contents in module file. Defaults to False.",
     ),
+    url_line_prefix: Optional[str] = typer.Option(
+        None,
+        help="Line prefix for git repository line url anchors #{prefix}line. If none provided, defaults to Github style notation.",
+    ),
 ) -> None:
     """Generates markdown documentation for your Python project based on Google-style docstrings."""
 
@@ -70,6 +74,7 @@ def generate(
             validate=validate,
             private_modules=private_modules,
             include_toc=toc,
+            url_line_prefix=url_line_prefix,
         )
     except Exception as ex:
         typer.echo(str(ex))

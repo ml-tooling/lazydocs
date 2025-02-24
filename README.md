@@ -171,6 +171,7 @@ lazydocs [OPTIONS] PATHS...
 
 * `--output-path TEXT`: The output path for the creation of the markdown files. Set this to `stdout` to print all markdown to stdout.  [default: ./docs/]
 * `--src-base-url TEXT`: The base repo link used as prefix for all source links. Should also include the branch name.
+* `--url-line-prefix TEXT`: Line prefix for git repository line url anchors #{prefix}line. If None provided, defaults to Github style notation.
 * `--overview-file TEXT`: Filename of overview file. If not provided, no API overview file will be generated.
 * `--remove-package-prefix / --no-remove-package-prefix`: If `True`, the package prefix will be removed from all functions and methods.  [default: True]
 * `--ignored-modules TEXT`: A list of modules that should be ignored.  [default: ]

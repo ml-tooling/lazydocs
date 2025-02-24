@@ -624,6 +624,7 @@ class MarkdownGenerator(object):
         src_root_path: Optional[str] = None,
         src_base_url: Optional[str] = None,
         remove_package_prefix: bool = False,
+        url_line_prefix: Optional[str] = None,
     ):
         """Initializes the markdown API generator.
 
@@ -632,10 +633,12 @@ class MarkdownGenerator(object):
             src_base_url: The base github link. Should include branch name.
                 All source links are generated with this prefix.
             remove_package_prefix: If `True`, the package prefix will be removed from all functions and methods.
+            url_line_prefix: Line prefix for git repository line url anchors. Default: None - github "L".
         """
         self.src_root_path = src_root_path
         self.src_base_url = src_base_url
         self.remove_package_prefix = remove_package_prefix
+        self.url_line_prefix = url_line_prefix
 
         self.generated_objects: List[Dict] = []
 
@@ -677,7 +680,13 @@ class MarkdownGenerator(object):
         relative_path = os.path.relpath(path, src_root_path)
 
         lineno = _get_line_no(obj)
-        lineno_hashtag = "" if lineno is None else "#L{}".format(lineno)
+        if self.url_line_prefix is None:
+            lineno_hashtag = "" if lineno is None else "#L{}".format(lineno)
+        else:
+            lineno_hashtag = "" if lineno is None else "#{}{}".format(
+                self.url_line_prefix,
+                lineno
+            )
 
         # add line hash
         relative_path = relative_path + lineno_hashtag
@@ -1118,6 +1127,7 @@ def generate_docs(
     validate: bool = False,
     private_modules: bool = False,
     include_toc: bool = False,
+    url_line_prefix: Optional[str] = None,
 ) -> None:
     """Generates markdown documentation for provided paths based on Google-style docstrings.
 
@@ -1133,6 +1143,7 @@ def generate_docs(
         watermark: If `True`, add a watermark with a timestamp to bottom of the markdown files.
         validate: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.
         private_modules: If `True`, includes modules with `_` prefix.
+        url_line_prefix: Line prefix for git repository line url anchors. Default: None - github "L".
     """
     stdout_mode = output_path.lower() == "stdout"
 
@@ -1173,6 +1184,7 @@ def generate_docs(
         src_root_path=src_root_path,
         src_base_url=src_base_url,
         remove_package_prefix=remove_package_prefix,
+        url_line_prefix=url_line_prefix,
     )
 
     pydocstyle_cmd = "pydocstyle --convention=google --add-ignore=D100,D101,D102,D103,D104,D105,D107,D202"
