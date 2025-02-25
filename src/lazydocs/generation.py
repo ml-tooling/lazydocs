@@ -259,7 +259,7 @@ def to_md_file(
         )
 
     print("Writing {}.".format(md_file))
-    with open(os.path.join(out_path, md_file), "w", encoding="utf-8") as f:
+    with open(os.path.join(out_path, md_file), "w", encoding="utf-8", newline="\n") as f:
         f.write(markdown_str)
 
 
@@ -1348,5 +1348,5 @@ def generate_docs(
         # Write mkdocs pages file
         print("Writing mkdocs .pages file.")
         # TODO: generate navigation items to fix problem with naming
-        with open(os.path.join(output_path, ".pages"), "w") as f:
+        with open(os.path.join(output_path, ".pages"),  "w", encoding="utf-8", newline="\n") as f:
             f.write(_MKDOCS_PAGES_TEMPLATE.format(overview_file=overview_file))
