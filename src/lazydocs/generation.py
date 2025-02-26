@@ -10,6 +10,7 @@ import re
 import subprocess
 import types
 from dataclasses import dataclass, is_dataclass
+from enum import Enum
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import quote
@@ -69,7 +70,7 @@ _TOC_TEMPLATE = """
 """
 
 _CLASS_TEMPLATE = """
-{section} <kbd>class</kbd> `{header}`
+{section} <kbd>{kind}</kbd> `{header}`
 {doc}
 {init}
 {variables}
@@ -807,6 +808,7 @@ class MarkdownGenerator(object):
             return ""
 
         section = "#" * depth
+        sectionheader = "#" * (depth + 1)
         subsection = "#" * (depth + 2)
         clsname = cls.__name__
         modname = cls.__module__
@@ -814,6 +816,27 @@ class MarkdownGenerator(object):
         path = self._get_src_path(cls)
         doc = _doc2md(cls)
         summary = _get_doc_summary(cls)
+        variables = []
+
+        # Handle different kinds of classes
+        if issubclass(cls, Enum):
+            kind = cls.__base__.__name__
+            if kind != "Enum":
+                kind = "enum[%s]" % (kind)
+            else:
+                kind = kind.lower()
+            variables.append(
+                "%s <kbd>symbols</kbd>\n" % (sectionheader)
+            )
+        elif is_dataclass(cls):
+            kind = "dataclass"
+            variables.append(
+                "%s <kbd>attributes</kbd>\n" % (sectionheader)
+            )
+        elif issubclass(cls, Exception):
+            kind = "exception"
+        else:
+            kind = "class"
 
         self.generated_objects.append(
             {
@@ -821,7 +844,7 @@ class MarkdownGenerator(object):
                 "name": header,
                 "full_name": header,
                 "module": modname,
-                "anchor_tag": _get_anchor_tag("class-" + header),
+                "anchor_tag": _get_anchor_tag("%s-%s" % (kind, header)),
                 "description": summary,
             }
         )
@@ -839,21 +862,31 @@ class MarkdownGenerator(object):
             # this happens if __init__ is outside the repo
             init = ""
 
-        variables = []
         for name, obj in inspect.getmembers(
             cls, lambda a: not (inspect.isroutine(a) or inspect.ismethod(a))
         ):
-            if not name.startswith("_") and type(obj) == property:
-                comments = _doc2md(obj) or inspect.getcomments(obj)
-                comments = "\n\n%s" % comments if comments else ""
-                property_name = f"{clsname}.{name}"
+            if not name.startswith("_"):
+                full_name = f"{clsname}.{name}"
                 if self.remove_package_prefix:
-                    property_name = name
-                variables.append(
-                    _SEPARATOR
-                    + "\n%s <kbd>property</kbd> %s%s\n"
-                    % (subsection, property_name, comments)
-                )
+                    full_name = name
+                if isinstance(obj, property):
+                    comments = _doc2md(obj) or inspect.getcomments(obj)
+                    comments = "\n\n%s" % comments if comments else ""
+                    variables.append(
+                        _SEPARATOR
+                        + "\n%s <kbd>property</kbd> %s%s\n"
+                        % (subsection, full_name, comments)
+                    )
+                elif isinstance(obj, Enum):
+                    variables.append(
+                        "- **%s** = %s\n" % (full_name, obj.value)
+                    )
+            elif name == "__dataclass_fields__":
+                for name, field in sorted((obj).items()):
+                    variables.append(
+                        "- ```%s``` (%s)\n" % (name,
+                                               field.type.__name__)
+                    )
 
         handlers = []
         for name, obj in inspect.getmembers(cls, inspect.ismethoddescriptor):
@@ -890,6 +923,7 @@ class MarkdownGenerator(object):
 
         markdown = _CLASS_TEMPLATE.format(
             section=section,
+            kind=kind,
             header=header,
             doc=doc if doc else "",
             init=init,
