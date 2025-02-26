@@ -9,7 +9,7 @@ import pkgutil
 import re
 import subprocess
 import types
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass
 from pydoc import locate
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import quote
@@ -297,12 +297,19 @@ def _get_class_that_defined_method(meth: Any) -> Any:
         mod = inspect.getmodule(meth)
         if mod is None:
             return None
-        cls = getattr(
-            inspect.getmodule(meth),
-            meth.__qualname__.split(".<locals>", 1)[0].rsplit(".", 1)[0],
-        )
-        if isinstance(cls, type):
-            return cls
+        try:
+            cls = getattr(
+                inspect.getmodule(meth),
+                meth.__qualname__.split(".<locals>", 1)[0].rsplit(".", 1)[0],
+            )
+        except AttributeError:
+            # workaround for AttributeError("module '<module name>' has no attribute '__create_fn__'")
+            for obj in meth.__globals__.values():
+                if is_dataclass(obj):
+                    return obj
+        else:
+            if isinstance(cls, type):
+                return cls
     return getattr(meth, "__objclass__", None)  # handle special descriptor objects
 
 
