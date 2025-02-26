@@ -12,7 +12,7 @@ jobs:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/pr-labeler-file-path.yml
           # workaround for problem: https://github.com/wesnoth/wesnoth/commit/958c82d0867568057caaf58356502ec8c87d8366
-          sync-labels: ""
+          sync-labels: false
       - uses: TimonVS/pr-labeler-action@v3
         with:
           configuration-path: .github/pr-labeler-branch-name.yml
