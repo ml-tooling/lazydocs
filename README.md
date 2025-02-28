@@ -171,11 +171,15 @@ lazydocs [OPTIONS] PATHS...
 
 * `--output-path TEXT`: The output path for the creation of the markdown files. Set this to `stdout` to print all markdown to stdout.  [default: ./docs/]
 * `--src-base-url TEXT`: The base repo link used as prefix for all source links. Should also include the branch name.
+* `--url-line-prefix TEXT`: Line prefix for git repository line url anchors #{prefix}line. If None provided, defaults to Github style notation.
 * `--overview-file TEXT`: Filename of overview file. If not provided, no API overview file will be generated.
 * `--remove-package-prefix / --no-remove-package-prefix`: If `True`, the package prefix will be removed from all functions and methods.  [default: True]
 * `--ignored-modules TEXT`: A list of modules that should be ignored.  [default: ]
 * `--watermark / --no-watermark`: If `True`, add a watermark with a timestamp to bottom of the markdown files.  [default: True]
 * `--validate / --no-validate`: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.  [default: False]
+* `--output-format TEXT`: The output format for the creation of the markdown files. This may be 'md' or 'mdx'. Defaults to md.
+* `--private-modules / --no-private-modules`: If `True`, includes modules with "_" prefix. [default: False]
+* `--toc / --no-toc`: If `True`, includes table of contents in generated module markdown files. [default: False]
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.
 * `--help`: Show this message and exit.
