@@ -1,20 +1,23 @@
 # Add documentation label to any change in documentation related files
 documentation:
-  - "docs/*"
-  - "docs/**/*"
-  - "README.md"
-  - "**/README.md"
-  - "CONTRIBUTING.md"
+- any:
+  - changed-files:
+    - any-glob-to-any-file: [
+        "docs/**/*", # All files, including subfolders
+        "README.md",
+        "**/README.md",
+        "CONTRIBUTING.md",
+      ]
 
 maintenance:
-  - ".vscode/*"
-  - ".vscode/**/*"
-  - ".github/*"
-  - ".github/**/*"
-  - ".reuse/*"
-  - "LICENSES/*"
-  - ".editorconfig"
-  - ".gitignore"
-  - "**/.gitignore"
-  - "build.py"
-  - "**/build.py"
+- any:
+  - changed-files:
+    - any-glob-to-any-file: [
+        ".vscode/**/*", # All files, including subfolders
+        ".github/**/*", # All files, including subfolders
+        ".reuse/*",
+        "LICENSES/*",
+        ".editorconfig",
+        "**/.gitignore",
+        "build.py",
+      ]
