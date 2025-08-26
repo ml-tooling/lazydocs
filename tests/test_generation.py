@@ -39,10 +39,14 @@ def test_func2md() -> None:
 
 
 def test_integration_generate_docs(capsys) -> None:
+    test_class = """
+class TestClass:
+   \"\"\"just a test class\"\"\"
+    """
     with TemporaryDirectory() as d:
         test_module_name = "test_module"
         with open(f"{d}/{test_module_name}.py", "w") as f:
-            f.write("")
+            f.write(test_class)
 
         overview_file_name = "DOCS.md"
         overview_file = f"{d}/output/{overview_file_name}"
@@ -58,4 +62,5 @@ def test_integration_generate_docs(capsys) -> None:
             result = f.read()
 
         assert test_module_name in result
+        assert f"{test_module_name}.TestClass" in result
         assert "Failed to generate docs for module" not in captured.out

@@ -629,8 +629,7 @@ def get_module(loader, module_name: str) -> Optional[Any]:
     spec = loader.find_spec(module_name)
     if spec is None:
         raise ImportError(f"Cannot find module {module_name}")
-
-    return importlib.util.module_from_spec(spec)
+    return spec.loader.load_module(spec.name)
 
 
 class MarkdownGenerator(object):
