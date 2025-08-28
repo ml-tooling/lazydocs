@@ -624,6 +624,14 @@ def _doc2md(obj: Any) -> str:
             prev_blank_line_count += 1
     return "".join(out)
 
+
+def get_module(loader, module_name: str) -> Optional[Any]:
+    spec = loader.find_spec(module_name)
+    if spec is None:
+        raise ImportError(f"Cannot find module {module_name}")
+    return spec.loader.load_module(spec.name)
+
+
 class MarkdownGenerator(object):
     """Markdown generator class."""
 
@@ -1250,8 +1258,7 @@ def generate_docs(
                         mod = importlib.util.module_from_spec(mod_spec)
                         mod_spec.loader.exec_module(mod)
                     except AttributeError:
-                        # For older python version compatibility
-                        mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
+                        mod = get_module(loader, module_name)
                     module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
                     if not module_md:
                         # Module md is empty -> ignore module and all submodules
@@ -1334,8 +1341,7 @@ def generate_docs(
                                 mod = importlib.util.module_from_spec(mod_spec)
                                 mod_spec.loader.exec_module(mod)
                             except AttributeError:
-                                # For older python version compatibility
-                                mod = loader.find_module(module_name).load_module(module_name)  # type: ignore
+                                mod = get_module(loader, module_name)
                             module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
 
                             if not module_md:
