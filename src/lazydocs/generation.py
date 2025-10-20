@@ -33,7 +33,8 @@ _RE_ADMONITION_TEXT = re.compile(
 )
 
 _RE_TYPED_ARGSTART = re.compile(r"^([\w\[\]_]{1,}?)[ ]*?\((.*?)\):[ ]+(.{2,})", re.IGNORECASE)
-_RE_ARGSTART = re.compile(r"^(.+):[ ]+(.{2,})$", re.IGNORECASE)
+# Restrict to valid Python identifier-like patterns to avoid matching URLs
+_RE_ARGSTART = re.compile(r"^([\w\[\]_]+):[ ]+(.{2,})$", re.IGNORECASE)
 
 _RE_CODE_TEXT = re.compile(r"^```[\w\-\.]*[ ]*$", re.IGNORECASE)
 
@@ -583,11 +584,41 @@ def _doc2md(obj: Any) -> str:
                 argindent = indent
             elif arg_list and not literal_block and _RE_ARGSTART.match(line):
                 # start of an exception-type block
-                out.append(
-                    "- "
-                    + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
+                # Check if this looks like a URL being incorrectly parsed
+                match = _RE_ARGSTART.match(line)
+                # Check if the part before the colon contains URL indicators or 
+                # is likely descriptive text rather than an argument name
+                before_colon = match.group(1) if match else ""
+                after_colon = match.group(2) if match else ""
+                
+                # Heuristics to detect non-argument lines:
+                # 1. The text before colon contains "http" (part of a URL)
+                # 2. The line contains "://" (URL protocol)
+                # 3. The text before colon is too long to be an argument name (>40 chars)
+                # 4. The text before colon contains common English words that aren't argument names
+                is_not_argument = (
+                    "http" in before_colon.lower() or
+                    "://" in line or
+                    len(before_colon) > 40 or
+                    # Check for common descriptive phrases (without trailing space)
+                    any(word in before_colon.lower() for word in ["see", "to find", "refer", "documentation", "available"])
                 )
-                argindent = indent
+                
+                if match and is_not_argument:
+                    # This is likely descriptive text with a colon, not an argument
+                    # Treat it as regular text continuation
+                    if argindent > 0:
+                        padding = max(indent - argindent + offset, 0)
+                        out.append(" " * padding + line.replace("\n", "\n" + " " * padding))
+                    else:
+                        out.append(line)
+                else:
+                    # This is a real argument
+                    out.append(
+                        "- "
+                        + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
+                    )
+                    argindent = indent
             elif indent > argindent:
                 # attach docs text of argument
                 # * (blockindent + 2)
