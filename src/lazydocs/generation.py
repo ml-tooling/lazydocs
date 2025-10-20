@@ -586,7 +586,7 @@ def _doc2md(obj: Any) -> str:
                 # start of an exception-type block
                 # Check if this looks like a URL being incorrectly parsed
                 match = _RE_ARGSTART.match(line)
-                # Check if the part before the colon contains URL indicators or 
+                # Check if the part before the colon contains URL indicators or
                 # is likely descriptive text rather than an argument name
                 before_colon = match.group(1) if match else ""
                 
