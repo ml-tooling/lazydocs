@@ -589,19 +589,18 @@ def _doc2md(obj: Any) -> str:
                 # Check if the part before the colon contains URL indicators or 
                 # is likely descriptive text rather than an argument name
                 before_colon = match.group(1) if match else ""
-                after_colon = match.group(2) if match else ""
                 
                 # Heuristics to detect non-argument lines:
                 # 1. The text before colon contains "http" (part of a URL)
                 # 2. The line contains "://" (URL protocol)
                 # 3. The text before colon is too long to be an argument name (>40 chars)
                 # 4. The text before colon contains common English words that aren't argument names
+                common_words = ["see", "to find", "refer", "documentation", "available"]
                 is_not_argument = (
                     "http" in before_colon.lower() or
                     "://" in line or
                     len(before_colon) > 40 or
-                    # Check for common descriptive phrases (without trailing space)
-                    any(word in before_colon.lower() for word in ["see", "to find", "refer", "documentation", "available"])
+                    any(word in before_colon.lower() for word in common_words)
                 )
                 
                 if match and is_not_argument:
