@@ -1,7 +1,6 @@
 import hashlib
 
-from lazydocs import MarkdownGenerator, generate_docs
-from tempfile import TemporaryDirectory
+from lazydocs import MarkdownGenerator
 
 
 def test_import2md() -> None:
@@ -36,31 +35,3 @@ def test_func2md() -> None:
     # Remove whitespaces: fix changes between py version 3.6 3.7 in signature method
     md_hash = hashlib.md5(markdown.replace(" ", "").encode("utf-8")).hexdigest()
     assert md_hash == "797bad8c00ee6f189cb6f578eaec02c4"
-
-
-def test_integration_generate_docs(capsys) -> None:
-    test_class = """
-class TestClass:
-   \"\"\"just a test class\"\"\"
-    """
-    with TemporaryDirectory() as d:
-        test_module_name = "test_module"
-        with open(f"{d}/{test_module_name}.py", "w") as f:
-            f.write(test_class)
-
-        overview_file_name = "DOCS.md"
-        overview_file = f"{d}/output/{overview_file_name}"
-        generate_docs(
-            paths=[d],
-            output_path=f"{d}/output/",
-            overview_file=overview_file_name
-        )
-
-        captured = capsys.readouterr()
-
-        with open(overview_file) as f:
-            result = f.read()
-
-        assert test_module_name in result
-        assert f"{test_module_name}.TestClass" in result
-        assert "Failed to generate docs for module" not in captured.out

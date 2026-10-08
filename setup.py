@@ -15,7 +15,7 @@ URL = "https://github.com/ml-tooling/lazydocs"
 EMAIL = "team@mltooling.org"
 AUTHOR = "ML Tooling Team"
 LICENSE = "MIT"
-REQUIRES_PYTHON = ">=3.9"
+REQUIRES_PYTHON = ">=3.6"
 VERSION = None  # Only set version if you like to overwrite the version in _about.py
 
 PWD = os.path.abspath(os.path.dirname(__file__))
@@ -45,7 +45,7 @@ setup(
     package_dir={"": "src"},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     zip_safe=False,
-    install_requires=["typer"],
+    install_requires=["typer", "regex"],
     # deprecated: dependency_links=dependency_links,
     extras_require={
         # extras can be installed via: pip install package[dev]
