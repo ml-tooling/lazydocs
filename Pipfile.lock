@@ -73,10 +73,12 @@
         },
         "certifi": {
             "hashes": [
-                "sha256:2bbf76fd432960138b3ef6dda3dde0544f27cbf8546c458e60baf371917ba9ee",
-                "sha256:50b1e4f8446b06f41be7dd6338db18e0990601dce795c2b1686458aa7e8fa7d8"
+                "sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae",
+                "sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b"
             ],
-            "version": "==2021.5.30"
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==2026.10.19"
         },
         "cffi": {
             "hashes": [
