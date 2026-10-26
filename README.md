@@ -38,7 +38,7 @@ Lazydocs makes it easy to generate beautiful markdown documentation for your Pyt
 
 ### Installation
 
-> _Requirements: Python 3.9+._
+> _Requirements: Python 3.6+._
 
 ```bash
 pip install lazydocs

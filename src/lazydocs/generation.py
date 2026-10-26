@@ -1,41 +1,88 @@
 """Main module for markdown generation."""
 
+import dataclasses
 import datetime
 import importlib
 import importlib.util
 import inspect
 import os
 import pkgutil
-import re
 import subprocess
+import sys
 import types
+import textwrap
+import typing
 from dataclasses import dataclass, is_dataclass
 from enum import Enum
 from pydoc import locate
-from typing import Any, Callable, Dict, List, Optional
+from types import ModuleType
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 from urllib.parse import quote
 
-_RE_BLOCKSTART_LIST = re.compile(
-    r"^(Args:|Arg:|Arguments:|Parameters:|Kwargs:|Attributes:|Returns:|Yields:|Kwargs:|Raises:).{0,2}$",
-    re.IGNORECASE,
+import regex
+
+_RE_BLOCKSTART_LIST = regex.compile(
+    r"^(?:Arg|Argument|Parameter|Kwarg|Attribute|Return|Yield|Raise|Method|Warn(?:ing)?)s:\s{0,2}$",
+    regex.IGNORECASE,
 )
 
-_RE_BLOCKSTART_TEXT = re.compile(
-    r"^(Example[s]?:|Todo:|Reference[s]?:).{0,2}$",
-    re.IGNORECASE
+_RE_BLOCKSTART_TEXT = regex.compile(
+    r"^(?:Example[s]?|Todo|Reference[s]?|Notes|References|See Also):\s{0,2}$",
+    regex.IGNORECASE
 )
 
 # https://github.com/orgs/community/discussions/16925
 # https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts
-_RE_ADMONITION_TEXT = re.compile(
-    r"^(?:\[\!?)?(NOTE|TIP|IMPORTANT|WARNING|CAUTION)s?[\]:][^:]?[ ]*(.*)$",
-    re.IGNORECASE
+_RE_ADMONITION_TEXT = regex.compile(
+    r"^(?:\[\!?)?(NOTE|TIP|IMPORTANT|WARNING|CAUTION)[\]:][^:]?[ ]*(.*)$",
+    regex.IGNORECASE
 )
 
-_RE_TYPED_ARGSTART = re.compile(r"^([\w\[\]_]{1,}?)[ ]*?\((.*?)\):[ ]+(.{2,})", re.IGNORECASE)
-_RE_ARGSTART = re.compile(r"^(.+):[ ]+(.{2,})$", re.IGNORECASE)
+_RE_TYPED_ARGSTART = regex.compile(
+    r"""
+    ^  # start of the string
+    (?:
+        # Case 1: Argument with optional type
+        (?P<arg>(\*\*|\*)?[a-zA-Z_][a-zA-Z0-9_]*)  # argument name: strict python variable name
+        \s*                              # optional spaces between argument name and type
+        # Optional group for argument type
+        (
+            \(\s*                          # optional space after opening '('
+            (?P<arg_type>[^)]+?)           # type inside parentheses (non-greedy match)
+            \s*\)                          # optional space before closing ')'
+        )?  # make parentheses optional for type
 
-_RE_CODE_TEXT = re.compile(r"^```[\w\-\.]*[ ]*$", re.IGNORECASE)
+    |   # Case 2: Return and Exception type (no argument name)
+        (?![Oo]r\s+|\|\s*)                  # Prevents starting with 'or' or '|'
+        (?P<alt_name>                       # Named capture group 'alt_name'
+            (?:
+                (?:\s+[Oo]r\s+|\s*\|\s*)?   # Optional separator: ' or ' or '|'
+                (?![Oo]r|\|)                # Prevent consecutive 'or' or '|'
+                [a-zA-Z_][\w.]+             # type_token, support lead _ and `.`
+                # Optional group for square bracket typed i.e list[dict[str, int]]
+                (?:
+                    # No padding to square bracket conents
+                    \[
+                    # support nested square brackets
+                    (?:
+                        (?&alt_name)
+                        (?:\s*,\s*(?&alt_name))*
+                        |
+                        [\w|,.\ \t]+
+                    )
+                    \]
+                )?
+            )+                              # One or more tokens
+        )
+    )
+    :\s+                                 # colon followed by at least one space
+    (?P<arg_desc>.{2,}| $)               # description (>= 2 chars) or ends with 2 space
+
+    """,
+    regex.IGNORECASE | regex.VERBOSE
+)
+
+_RE_CODE_TEXT = regex.compile(r"^```[\w\-\.]*[ ]*$", regex.IGNORECASE)
 
 _IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
 
@@ -49,8 +96,12 @@ _MDX_SOURCE_BADGE_TEMPLATE = """
 <a href="{path}"><img align="right" style={{{{"float":"right"}}}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
 """
 
-_SEPARATOR = """
----
+_SEPARATOR_MAJOR = """
+<hr style="height: 6px; border: none; background-color: currentColor;">
+"""
+
+_SEPARATOR_MINOR = """
+<hr style="height: 2px; border: none; background-color: currentColor;">
 """
 
 _FUNC_TEMPLATE = """
@@ -72,8 +123,8 @@ _TOC_TEMPLATE = """
 _CLASS_TEMPLATE = """
 {section} <kbd>{kind}</kbd> `{header}`
 {doc}
-{init}
 {variables}
+{init}
 {handlers}
 {methods}
 """
@@ -118,7 +169,7 @@ def _get_function_signature(
     function: Callable,
     owner_class: Any = None,
     show_module: bool = False,
-    ignore_self: bool = False,
+    ignore_receiver: bool = False,
     wrap_arguments: bool = False,
     remove_package: bool = False,
 ) -> str:
@@ -128,13 +179,16 @@ def _get_function_signature(
         function: Selected function (or method) to generate the signature string.
         owner_class: Owner class of this function.
         show_module: If `True`, add module path in function signature.
-        ignore_self: If `True`, ignore self argument in function signature.
+        ignore_self: If `True`, ignore the receiver argument (`self` or `cls`) in the function signature.
         wrap_arguments:  If `True`, wrap all arguments to new lines.
         remove_package:  If `True`, the package path will be removed from the function signature.
 
     Returns:
         str: Signature of selected function.
     """
+    # Safely unwrap decorator wrappers if a descriptor object is passed directly
+    function = getattr(function, "__func__", function)
+    
     isclass = inspect.isclass(function)
 
     # Get base name.
@@ -174,25 +228,27 @@ def _get_function_signature(
             return_type = return_type.replace("typing.", "")
             if remove_package:
                 # Remove all package path return type
-                return_type = re.sub(r"([a-zA-Z0-9_]*?\.)", "", return_type)
+                return_type = regex.sub(r"([a-zA-Z0-9_]*?\.)", "", return_type)
 
-        for parameter in parameters:
-            argument = str(parameters[parameter])
-            if ignore_self and argument == "self":
-                # Ignore self
+        for parameter_name in parameters:
+            if ignore_receiver and parameter_name in ("self", "cls"):
+                # Ignore self or cls
                 continue
+
+            argument = str(parameters[parameter_name])
+
             # Reintroduce Optionals
-            argument = re.sub(r"Union\[(.*?), NoneType\]", r"Optional[\1]", argument)
+            argument = regex.sub(r"Union\[(.*?), NoneType\]", r"Optional[\1]", argument)
 
             # Remove package
             if remove_package:
                 # Remove all package path from parameter signature
                 if "=" not in argument:
-                    argument = re.sub(r"([a-zA-Z0-9_]*?\.)", "", argument)
+                    argument = regex.sub(r"([a-zA-Z0-9_]*?\.)", "", argument)
                 else:
                     # Remove only from part before the first =
                     argument_split = argument.split("=")
-                    argument_split[0] = re.sub(
+                    argument_split[0] = regex.sub(
                         r"([a-zA-Z0-9_]*?\.)", "", argument_split[0]
                     )
                     argument = "=".join(argument_split)
@@ -318,6 +374,36 @@ def _get_docstring(obj: Any) -> str:
     return "" if obj.__doc__ is None else inspect.getdoc(obj) or ""
 
 
+def _get_field_docstrings(cls):
+    """Scans class source lines to map field names to their inline docstrings."""
+    try:
+        source = inspect.getsource(cls)
+    except (TypeError, OSError):
+        return {}
+
+    source = textwrap.dedent(source)
+    lines = source.splitlines()
+    field_docs = {}
+
+    for i in range(len(lines) - 1):
+        line = lines[i].strip()
+        # Match field definition (e.g., `username: str` or `DEFAULT_TIMEOUT: int = 300`)
+        match = regex.match(r'^([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::|=)', line)
+        if match:
+            field_name = match.group(1)
+            next_line = lines[i + 1].strip()
+
+            # Check if the next line is a string literal (docstring)
+            if (next_line.startswith('"""') and next_line.endswith('"""')) or \
+               (next_line.startswith("'''") and next_line.endswith("'''")) or \
+               (next_line.startswith('"') and next_line.endswith('"')) or \
+               (next_line.startswith("'") and next_line.endswith("'")):
+                doc = next_line[3:-
+                                3] if next_line.startswith(('"""', "'''")) else next_line[1:-1]
+                field_docs[field_name] = doc.strip()
+
+    return field_docs
+
 def _is_object_ignored(obj: Any) -> bool:
     if (
         _IGNORE_GENERATION_INSTRUCTION.replace(" ", "").lower()
@@ -328,19 +414,22 @@ def _is_object_ignored(obj: Any) -> bool:
     return False
 
 
-def _is_module_ignored(module_name: str, ignored_modules: List[str], private_modules: bool = False) -> bool:
+def _is_module_ignored(module_name: str, ignored_modules: Set[str], private_modules: bool = False) -> bool:
     """Checks if a given module is ignored."""
     if module_name.split(".")[-1].startswith("_") and module_name[1] != "_" and not private_modules:
         return True
 
-    for ignored_module in ignored_modules:
-        if module_name == ignored_module:
-            return True
+    # Trivial exact match
+    if module_name in ignored_modules:
+        return True
 
-        # Check is module is subpackage of an ignored package
-        if module_name.startswith(ignored_module + "."):
+    # Check is module is subpackage of an ignored package
+    # Check parent packages from deepest to top level
+    parts = module_name.split(".")
+    for i in range(len(parts) - 1, 0, -1):
+        parent = ".".join(parts[:i])
+        if parent in ignored_modules:
             return True
-
     return False
 
 
@@ -361,16 +450,23 @@ def _get_src_root_path(obj: Any) -> str:
 
 
 def _get_doc_summary(obj: Any) -> str:
-    # First line should contain the summary
-    return _get_docstring(obj).split("\n")[0]
+    # Summary should continue until blank space
+    summary = []
+    for line in _get_docstring(obj).split("\n"):
+        if line == "" or line is None:
+            break
+        if line.endswith("  "):
+            line = f"{line}\n"
+        summary.append(line.lstrip())
+    return " ".join(summary)
 
 
 def _get_anchor_tag(header: str) -> str:
     anchor_tag = header.strip().lower()
     # Whitespaces to -
-    anchor_tag = re.compile(r"\s").sub("-", anchor_tag)
+    anchor_tag = regex.compile(r"\s").sub("-", anchor_tag)
     # Remove not allowed characters
-    anchor_tag = re.compile(r"[^a-zA-Z0-9-_]").sub("", anchor_tag)
+    anchor_tag = regex.compile(r"[^a-zA-Z0-9-_]").sub("", anchor_tag)
     return anchor_tag
 
 
@@ -388,7 +484,12 @@ def _doc2md(obj: Any) -> str:
     # the documentation strings are now inherited if not overridden.
     # For details see: https://docs.python.org/3.6/library/inspect.html#inspect.getdoc
     # doc = getdoc(func) or ""
+    # TODO: Clean up and tidy docstring parsing and output formatting logic
     doc = _get_docstring(obj)
+
+    # Early escape for no available docstring
+    if not doc:
+        return ""
 
     padding = 0
     blockindent = 0
@@ -410,7 +511,7 @@ def _doc2md(obj: Any) -> str:
         indent: int
         offset: int
 
-    def _get_section_offset(lines: list, start_index: int, blockindent: int):
+    def _get_section_offset(lines: list, start_index: int, blockindent: int) -> int:
         """Determine base padding offset for section.
 
         Args:
@@ -421,7 +522,7 @@ def _doc2md(obj: Any) -> str:
         Returns:
             int: Padding offset.
         """
-        offset = []
+        offset: List[int] = []
         try:
             for line in lines[start_index:]:
                 indent = len(line) - len(line.lstrip())
@@ -436,9 +537,9 @@ def _doc2md(obj: Any) -> str:
         return -min(offset) if offset else 0
 
     def _lines_isvalid(lines: list, start_index: int, blockindent: int,
-                            allow_same_level: bool = False,
-                            require_next_is_blank: bool = False,
-                            max_blank: int = None):
+                       allow_same_level: bool = False,
+                       require_next_is_blank: bool = False,
+                       max_blank: Optional[int] = None) -> bool:
         """Determine following lines fit section rules.
 
         Args:
@@ -517,11 +618,11 @@ def _doc2md(obj: Any) -> str:
                 line = line + "\n```"
         elif doctest_block and \
                 not _lines_isvalid(docstring, line_indx + 1, doctest_block.indent,
-                                      True, False, 1):
+                                   True, False, 1):
             # Doctest block Exit Condition
             offset = doctest_block.indent - indent
-            line = " " * (indent - doctest_block.indent +
-                          doctest_block.offset) + line + "\n```"
+            line = " " * (indent - doctest_block.indent
+                          + doctest_block.offset) + line + "\n```"
             block_exit = True
         elif line.endswith("::") and not (literal_block) and \
                 _lines_isvalid(docstring, line_indx + 1, indent, False, True, None):
@@ -538,11 +639,11 @@ def _doc2md(obj: Any) -> str:
                 line = "```" + line
                 indent = literal_block.indent
             elif not _lines_isvalid(docstring, line_indx + 1, literal_block.indent,
-                                       False, False, None):
+                                    False, False, None):
                 # Literal block exit condition
                 offset += literal_block.indent - indent
-                line = " " * (indent - literal_block.indent +
-                              literal_block.offset) + line + "\n```"
+                line = " " * (indent - literal_block.indent
+                              + literal_block.offset) + line + "\n```"
                 block_exit = True
             elif line:
                 offset += literal_block.offset
@@ -561,7 +662,7 @@ def _doc2md(obj: Any) -> str:
             offset = admonition_block.indent - indent
             line = "> {}".format(line.replace("\n", "\n> "))
             if not _lines_isvalid(docstring, line_indx + 1, admonition_block.indent,
-                                     False, False, None):
+                                  False, False, None):
                 admonition_block = None
 
         if (blockstart_result or blocktext_result):
@@ -574,19 +675,24 @@ def _doc2md(obj: Any) -> str:
                 out.append("\n")
             out.append("**{}**\n".format(line.strip()))
         elif indent > blockindent and (arg_list or section_block):
-            if arg_list and not literal_block and _RE_TYPED_ARGSTART.match(line):
+            param_match = _RE_TYPED_ARGSTART.match(line)
+
+            if arg_list and not md_code_snippet and \
+                    (indent <= argindent if argindent else indent) and param_match:
                 # start of new argument
-                out.append(
-                    "- "
-                    + _RE_TYPED_ARGSTART.sub(r"<b>`\1`</b> (\2): \3", line)
-                )
-                argindent = indent
-            elif arg_list and not literal_block and _RE_ARGSTART.match(line):
-                # start of an exception-type block
-                out.append(
-                    "- "
-                    + _RE_ARGSTART.sub(r"<b>`\1`</b>: \2", line)
-                )
+                # Extract the matched groups
+                alt_name = param_match.group("alt_name")
+                arg_type = param_match.group("arg_type")
+                desc = param_match.group("arg_desc")
+                # support for exception style and return type
+                arg_name = alt_name if alt_name else param_match.group("arg")
+
+                # output whether arg_type exists
+                if arg_type:
+                    out.append("- <b>`" + arg_name + "`</b> (" + arg_type + "): " +
+                               desc)
+                else:
+                    out.append("- <b>`" + arg_name + "`</b>: " + desc)
                 argindent = indent
             elif indent > argindent:
                 # attach docs text of argument
@@ -595,11 +701,18 @@ def _doc2md(obj: Any) -> str:
                 out.append(" " * padding
                            + line.replace("\n",
                                           "\n" + " " * padding))
+            elif md_code_snippet:
+                out.append(line)
             else:
                 padding = max(indent - blockindent + offset, 0)
                 out.append(line.replace("\n",
                                         "\n" + " " * padding))
         elif line:
+            # Assume require force markdown newline if line ends with ":"
+            if line.endswith(":") and \
+                    not any([md_code_snippet, literal_block, doctest_block]):
+                line = line + "  "
+
             padding = max(indent - blockindent + offset, 0)
             out.append(" " * padding
                        + line.replace("\n",
@@ -623,13 +736,6 @@ def _doc2md(obj: Any) -> str:
         else:
             prev_blank_line_count += 1
     return "".join(out)
-
-
-def get_module(loader, module_name: str) -> Optional[Any]:
-    spec = loader.find_spec(module_name)
-    if spec is None:
-        raise ImportError(f"Cannot find module {module_name}")
-    return spec.loader.load_module(spec.name)
 
 
 class MarkdownGenerator(object):
@@ -727,50 +833,63 @@ class MarkdownGenerator(object):
             # The function is ignored from generation
             return ""
 
+        # 1. Intercept decorator wrappers BEFORE accessing attributes or signatures
+        is_classmethod = isinstance(func, classmethod)
+        is_staticmethod = isinstance(func, staticmethod)
+
+        # 2. Unwrap the real callable function object so it can be safely inspected
+        unwrapped_func = getattr(func, "__func__", func)
+
         section = "#" * depth
-        funcname = func.__name__
+        funcname = unwrapped_func.__name__
         modname = None
-        if hasattr(func, "__module__"):
-            modname = func.__module__
+        if hasattr(unwrapped_func, "__module__"):
+            modname = unwrapped_func.__module__
 
         escfuncname = (
             "%s" % funcname if funcname.startswith("_") else funcname
         )  # "`%s`"
 
         full_name = "%s%s" % ("%s." % clsname if clsname else "", escfuncname)
-        header = full_name
 
         if self.remove_package_prefix:
             # TODO: Evaluate
             # Only use the name
             header = escfuncname
+        else:
+            header = full_name
 
-        path = self._get_src_path(func)
-        doc = _doc2md(func)
-        summary = _get_doc_summary(func)
+        path = self._get_src_path(unwrapped_func)
+        doc = _doc2md(unwrapped_func)
+        summary = _get_doc_summary(unwrapped_func)
 
-        funcdef = _get_function_signature(
-            func, ignore_self=True, remove_package=self.remove_package_prefix
-        )
-
-        # split the function definition if it is too long
-        lmax = 80
-        if len(funcdef) > lmax:
-            funcdef = _get_function_signature(
-                func,
-                ignore_self=True,
-                wrap_arguments=True,
-                remove_package=self.remove_package_prefix,
-            )
-
-        if inspect.ismethod(func):
+        # 3. Determine function type
+        if is_classmethod or inspect.ismethod(func):
             func_type = "classmethod"
+        elif is_staticmethod:
+            func_type = "staticmethod"
         else:
             if _get_class_that_defined_method(func) is None:
                 func_type = "function"
             else:
                 # function of a class
                 func_type = "constructor" if escfuncname == "__init__" else "method"
+
+        funcdef = _get_function_signature(
+            unwrapped_func,
+            ignore_receiver=True,
+            remove_package=self.remove_package_prefix
+        )
+
+        # split the function definition if it is too long
+        lmax = 80
+        if len(funcdef) > lmax:
+            funcdef = _get_function_signature(
+                unwrapped_func,
+                ignore_receiver=True,
+                wrap_arguments=True,
+                remove_package=self.remove_package_prefix,
+            )
 
         self.generated_objects.append(
             {
@@ -824,7 +943,12 @@ class MarkdownGenerator(object):
         path = self._get_src_path(cls)
         doc = _doc2md(cls)
         summary = _get_doc_summary(cls)
+
+        annotations = getattr(cls, "__annotations__", {})
         variables = []
+        attributes_to_render = []
+        # Pull inline docstrings for fields/annotations using your regex helper
+        field_docs = _get_field_docstrings(cls)
 
         # Handle different kinds of classes
         if issubclass(cls, Enum):
@@ -833,18 +957,85 @@ class MarkdownGenerator(object):
                 kind = "enum[%s]" % (kind)
             else:
                 kind = kind.lower()
-            variables.append(
-                "%s <kbd>symbols</kbd>\n" % (sectionheader)
-            )
+
+            for name, member in cls.__members__.items():
+                attributes_to_render.append({
+                    "name": name,
+                    "type": None,
+                    "value": repr(member.value),
+                    "doc": field_docs.get(name),
+                    "is_bold": True,
+                })
+
         elif is_dataclass(cls):
             kind = "dataclass"
-            variables.append(
-                "%s <kbd>attributes</kbd>\n" % (sectionheader)
-            )
-        elif issubclass(cls, Exception):
-            kind = "exception"
+
+            # Filter out auto-generated signature docstrings and summary (e.g., "ClassName(arg1, arg2...)")
+            if doc:
+                cleaned_doc = doc.strip()
+                if (
+                    cleaned_doc.startswith(f"{clsname}(")
+                    and cleaned_doc.endswith(")")
+                    and "\n" not in cleaned_doc
+                ):
+                    doc = ""
+                    summary = ""
+
+            # Extract dataclass fields directly from __dataclass_fields__
+            for name, field in getattr(cls, "__dataclass_fields__", {}).items():
+                if name.startswith("_"):
+                    continue
+                type_name = getattr(field.type, "__name__", str(field.type))
+                val = None
+                if field.default is not dataclasses.MISSING:
+                    val = repr(field.default)
+                elif field.default_factory is not dataclasses.MISSING:
+                    val = "default_factory"
+
+                attributes_to_render.append({
+                    "name": name,
+                    "type": type_name,
+                    "value": val,
+                    "doc": field_docs.get(name),
+                    "is_bold": True,
+                })
+
         else:
-            kind = "class"
+            if issubclass(cls, Exception):
+                kind = "exception"
+            else:
+                kind = "class"
+
+            # 1. Collect standard class-level annotations
+            for name, ann_type in annotations.items():
+                if name.startswith("_"):
+                    continue
+                type_name = getattr(ann_type, "__name__", str(ann_type))
+                val = repr(getattr(cls, name)) if hasattr(cls, name) else None
+
+                attributes_to_render.append({
+                    "name": name,
+                    "type": type_name,
+                    "value": val,
+                    "doc": field_docs.get(name),
+                    "is_bold": True,
+                })
+
+            # 2. Collect instance variables from __init__ annotations (No AST!)
+            init_method = getattr(cls, "__init__", None)
+            if init_method:
+                init_annotations = getattr(init_method, "__annotations__", {})
+                for name, ann_type in init_annotations.items():
+                    # Skip 'return' type annotation and private or already documented attributes
+                    if name == "return" or name.startswith("_") or name in annotations:
+                        continue
+                    
+                    type_name = getattr(ann_type, "__name__", str(ann_type))
+                    attributes_to_render.append({
+                        "name": name,
+                        "type": type_name,
+                        "value": None
+                    })
 
         self.generated_objects.append(
             {
@@ -870,64 +1061,83 @@ class MarkdownGenerator(object):
             # this happens if __init__ is outside the repo
             init = ""
 
-        for name, obj in inspect.getmembers(
-            cls, lambda a: not (inspect.isroutine(a) or inspect.ismethod(a))
-        ):
-            if not name.startswith("_"):
-                full_name = f"{clsname}.{name}"
-                if self.remove_package_prefix:
-                    full_name = name
-                if isinstance(obj, property):
-                    comments = _doc2md(obj) or inspect.getcomments(obj)
-                    comments = "\n\n%s" % comments if comments else ""
-                    variables.append(
-                        _SEPARATOR
-                        + "\n%s <kbd>property</kbd> %s%s\n"
-                        % (subsection, full_name, comments)
-                    )
-                elif isinstance(obj, Enum):
-                    variables.append(
-                        "- **%s** = %s\n" % (full_name, obj.value)
-                    )
-            elif name == "__dataclass_fields__":
-                for name, field in sorted((obj).items()):
-                    variables.append(
-                        "- ```%s``` (%s)\n" % (name,
-                                               field.type.__name__)
-                    )
+        # Unified render loop for upfront variables
+        for attr in attributes_to_render:
+            full_name = attr["name"] if self.remove_package_prefix else f"{clsname}.{attr['name']}"
+            t_name = f" ({attr['type']})" if attr["type"] else ""
+            val_str = f" = {attr['value']}" if attr["value"] is not None else ""
+            doc_str = f" — {attr['doc']}" if attr.get("doc") else ""
 
+            variables.append(f"- **{full_name}**{t_name}{val_str}{doc_str}\n")
+
+        class_attributes = inspect.classify_class_attrs(cls)
         handlers = []
-        for name, obj in inspect.getmembers(cls, inspect.ismethoddescriptor):
-            if (
-                not name.startswith("_")
-                and hasattr(obj, "__module__")
-                # object module should be the same as the calling module
-                and obj.__module__ == modname
-            ):
-                handler_name = f"{clsname}.{name}"
-                if self.remove_package_prefix:
-                    handler_name = name
+        methods = []
 
-                handlers.append(
-                    _SEPARATOR
-                    + "\n%s <kbd>handler</kbd> %s\n" % (subsection, handler_name)
+        for attr in class_attributes:
+            name = attr.name
+            obj = attr.object
+            attr_kind = attr.kind
+
+            if name.startswith("_"):
+                continue  # Skip all other private/internal attributes
+
+            # Skip enum members here since they are already fully handled upfront via __members__
+            if issubclass(cls, Enum):
+                continue
+
+            # Common naming variables used across all blocks
+            if self.remove_package_prefix:
+                full_name = name
+            else:
+                full_name = f"{clsname}.{name}"
+
+            # --- ROUTING BLOCK: PROPERTIES & DATA ---
+            if attr_kind == "property" or isinstance(obj, property):
+                comments = _doc2md(obj) or inspect.getcomments(obj)
+                comments = "\n\n%s" % comments if comments else ""
+                variables.append(
+                    _SEPARATOR_MINOR
+                    + "\n%s <kbd>property</kbd> %s%s\n"
+                    % (sectionheader, full_name, comments)
                 )
 
-        methods = []
-        # for name, obj in getmembers(cls, inspect.isfunction):
-        for name, obj in inspect.getmembers(
-            cls, lambda a: inspect.ismethod(a) or inspect.isfunction(a)
-        ):
-            if (
-                not name.startswith("_")
-                and hasattr(obj, "__module__")
-                and name not in handlers
-                # object module should be the same as the calling module
-                and obj.__module__ == modname
-            ):
-                function_md = self.func2md(obj, clsname=clsname, depth=depth + 1, is_mdx=is_mdx)
-                if function_md:
-                    methods.append(_SEPARATOR + function_md)
+            elif attr_kind == "data":
+                if name in annotations or issubclass(cls, Exception) or name == "__dataclass_fields__":
+                    continue
+                val_representation = getattr(obj, "value", obj)
+                doc_str = f" — {field_docs.get(name)}" if field_docs.get(name) else ""
+                variables.append(
+                    "- **%s** = %s%s\n" % (
+                        full_name,
+                        repr(val_representation),
+                        doc_str
+                    )
+                )
+
+            # --- ROUTING BLOCK: HANDLERS & METHODS ---
+            elif attr_kind in ("method", "class method", "static method"):
+                if hasattr(obj, "__module__") and obj.__module__ == modname:
+
+                    # 1. Safely unwrap classmethod/staticmethod decorators to get the callable function
+                    underlying_func = getattr(obj, "__func__", obj)
+
+                    # 2. Distinguish True 'handlers' (No __code__ block available anywhere) vs 'standard methods'
+                    if inspect.ismethoddescriptor(obj) and not hasattr(underlying_func, "__code__"):
+                        handlers.append(
+                            _SEPARATOR_MINOR
+                            + "\n%s <kbd>handler</kbd> %s\n" % (subsection, full_name)
+                        )
+                    else:
+                        # Pass raw function object to func2md
+                        function_md = self.func2md(
+                            obj,
+                            clsname=clsname,
+                            depth=depth + 1,
+                            is_mdx=is_mdx
+                        )
+                        if function_md:
+                            methods.append(_SEPARATOR_MINOR + function_md)
 
         markdown = _CLASS_TEMPLATE.format(
             section=section,
@@ -993,7 +1203,7 @@ class MarkdownGenerator(object):
             ):
                 class_markdown = self.class2md(obj, depth=depth + 1, is_mdx=is_mdx)
                 if class_markdown:
-                    classes.append(_SEPARATOR + class_markdown)
+                    classes.append(_SEPARATOR_MAJOR + class_markdown)
                     line_nos.append(_get_line_no(obj) or 0)
         classes = _order_by_line_nos(classes, line_nos)
 
@@ -1009,21 +1219,27 @@ class MarkdownGenerator(object):
             ):
                 function_md = self.func2md(obj, depth=depth + 1, is_mdx=is_mdx)
                 if function_md:
-                    functions.append(_SEPARATOR + function_md)
+                    functions.append(_SEPARATOR_MINOR + function_md)
                     line_nos.append(_get_line_no(obj) or 0)
         functions = _order_by_line_nos(functions, line_nos)
 
         variables: List[str] = []
         line_nos = []
         for name, obj in module.__dict__.items():
-            if not name.startswith("_") and name not in found:
+            if name.startswith("_"):
+                continue
+            if obj is typing.TYPE_CHECKING:
+                continue
+            if name not in found:
                 if hasattr(obj, "__module__") and obj.__module__ != modname:
                     continue
                 if hasattr(obj, "__name__") and not obj.__name__.startswith(modname):
                     continue
+                if isinstance(obj, types.ModuleType):
+                    continue
                 comments = inspect.getcomments(obj)
-                comments = ": %s" % comments if comments else ""
-                variables.append("- **%s**%s" % (name, comments))
+                comments = "  \n\t*%s*" % comments if comments else ""
+                variables.append("- **%s** = %s%s" % (name, obj, comments))
                 line_nos.append(_get_line_no(obj) or 0)
 
         variables = _order_by_line_nos(variables, line_nos)
@@ -1142,24 +1358,31 @@ class MarkdownGenerator(object):
             modules=modules_md, classes=classes_md, functions=functions_md
         )
 
-    def toc2md(self, module: types.ModuleType = None, is_mdx: bool = False) -> str:
-        """Generates table of contents for imported object."""
+    def toc2md(self, module: types.ModuleType, is_mdx: bool = False) -> str:
+        """Generates table of contents for imported object.
+
+        Args:
+            module (ModuleType): Parsed module object for TOC generation.
+            is_mdx (bool, optional): JSX support. Default to False.
+
+        Returns:
+            str: Markdown documentation of TOC file if TOC exist.
+        """
         toc = []
         for obj in self.generated_objects:
             if module and (module.__name__ != obj["module"] or obj["type"] == "module"):
                 continue
-            # module_name = obj["module"].split(".")[-1]
             full_name = obj["full_name"]
             name = obj["name"]
-            if is_mdx:
-                link = "./" + obj["module"] + ".mdx#" + obj["anchor_tag"]
-            else:
-                link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
-            line = f"- [`{name}`]({link})"
+            summary = obj["description"]
+            link = f"./{obj['module']}.md{'x' if is_mdx else ''}#{obj['anchor_tag']}"
+            line = f"- [`{name}`]({link}){': ' if summary else ''}{summary}"
             depth = max(len(full_name.split(".")) - 1, 0)
             if depth:
                 line = "\t" * depth + line
             toc.append(line)
+        if not toc:
+            return ""
         return _TOC_TEMPLATE.format(toc="\n".join(toc))
 
 
@@ -1169,7 +1392,7 @@ def generate_docs(
     src_root_path: Optional[str] = None,
     src_base_url: Optional[str] = None,
     remove_package_prefix: bool = False,
-    ignored_modules: Optional[List[str]] = None,
+    ignored_modules: Optional[Union[Set[str],List[str]]] = None,
     output_format: Optional[str] = None,
     overview_file: Optional[str] = None,
     watermark: bool = True,
@@ -1186,22 +1409,27 @@ def generate_docs(
         src_root_path: The root folder name containing all the sources. Fallback to git repo root.
         src_base_url: The base url of the github link. Should include branch name. All source links are generated with this prefix.
         remove_package_prefix: If `True`, the package prefix will be removed from all functions and methods.
-        ignored_modules: A list of modules that should be ignored.
+        ignored_modules: A set of modules that should be ignored.
         output_format: Markdown file extension and format.
         overview_file: Filename of overview file. If not provided, no overview file will be generated.
         watermark: If `True`, add a watermark with a timestamp to bottom of the markdown files.
         validate: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.
         private_modules: If `True`, includes modules with `_` prefix.
+        include_toc: Include table of contents in module file. Defaults to False.
         url_line_prefix: Line prefix for git repository line url anchors. Default: None - github "L".
     """
     stdout_mode = output_path.lower() == "stdout"
 
-    if not stdout_mode and not os.path.exists(output_path):
-        # Create output path
-        os.makedirs(output_path)
+    if not stdout_mode:
+        print(f"Output Location: {output_path}")
+        if not os.path.exists(output_path):
+            # Create output path
+            os.makedirs(output_path)
 
     if not ignored_modules:
-        ignored_modules = list()
+        ignored_modules = set()
+    elif isinstance(ignored_modules, list):
+        ignored_modules = set(ignored_modules)
 
     if output_format and output_format != 'md' and output_format != 'mdx':
         raise Exception(f"Unsupported output format: {output_format}. Choose either 'md' or 'mdx'.")
@@ -1246,32 +1474,62 @@ def generate_docs(
             if not stdout_mode:
                 print(f"Generating docs for python package at: {path}")
 
+            path_abs = os.path.abspath(path)
+
+            # Work around for relative imports in top level modules
+            # requires adding parent directory as base package to sys modules namespace
+            parent_package = os.path.basename(path)
+            mod = ModuleType(parent_package)
+            mod.__path__ = [path_abs]
+            mod.__package__ = parent_package
+            if parent_package not in sys.modules:
+                sys.modules[parent_package] = mod  # Add module to current namespace
+
             # Generate one file for every discovered module
-            for loader, module_name, _ in pkgutil.walk_packages([path]):
+            for loader, module_name, is_pkg in pkgutil.walk_packages([path_abs]):
                 if _is_module_ignored(module_name, ignored_modules, private_modules):
                     # Add module to ignore list, so submodule will also be ignored
-                    ignored_modules.append(module_name)
+                    ignored_modules.add(module_name)
                     continue
+
                 try:
+                    # Modern PEP 451 path
                     try:
-                        mod_spec = importlib.util.spec_from_loader(module_name, loader)
-                        mod = importlib.util.module_from_spec(mod_spec)
-                        mod_spec.loader.exec_module(mod)
+                        mod_spec = loader.find_spec(module_name)
                     except AttributeError:
-                        mod = get_module(loader, module_name)
-                    module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
+                        # Fallback if Loader object has no attribute `find_spec`
+                        module_filepath = os.path.join(
+                            path_abs, *module_name.split(".")) + ".py"
+                        mod_spec = importlib.util.spec_from_file_location(
+                            module_name,
+                            os.path.join(loader.path, module_filepath)
+                        )
+                    if mod_spec is None or mod_spec.loader is None:
+                        raise ImportError(f"Cannot load module {module_name} from {path}")
+                    mod = importlib.util.module_from_spec(mod_spec)
+                    full_module_name = f"{parent_package}.{module_name}"
+                    mod.__package__ = (module_name if is_pkg
+                                       else full_module_name).rsplit(".", 1)[0]
+                    # Add module to current namespace
+                    if mod.__name__ not in sys.modules:
+                        sys.modules[mod.__name__] = mod
+                    mod_spec.loader.exec_module(mod)
+
+                    module_md = generator.module2md(module=mod,
+                                                    is_mdx=is_mdx,
+                                                    include_toc=include_toc)
                     if not module_md:
                         # Module md is empty -> ignore module and all submodules
                         # Add module to ignore list, so submodule will also be ignored
-                        ignored_modules.append(module_name)
+                        ignored_modules.add(module_name)
                         continue
 
                     if stdout_mode:
                         print(module_md)
                     else:
                         to_md_file(
-                            module_md,
-                            mod.__name__,
+                            markdown_str=module_md,
+                            filename=mod.__name__,
                             out_path=output_path,
                             watermark=watermark,
                             is_mdx=is_mdx,
@@ -1285,26 +1543,34 @@ def generate_docs(
                 raise Exception(f"Validation for {path} failed.")
 
             if not stdout_mode:
-                print(f"Generating docs for python module at: {path}")
+                print(f"Generating docs for python module: {path}")
 
-            module_name = os.path.basename(path)
+            path_abs = os.path.abspath(path)
+            src_dir, filename = os.path.split(path_abs)
+            # TODO: Possible new feature?? Dynamically locating package root to define full dotted module name and package
+            module_name, _ = os.path.splitext(filename)
+            parent_package = os.path.basename(src_dir)
 
-            spec = importlib.util.spec_from_file_location(
-                module_name,
-                path,
-            )
-            assert spec is not None
-            mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)  # type: ignore
+            mod_spec = importlib.util.spec_from_file_location(module_name, path_abs)
+            if mod_spec is None or mod_spec.loader is None:
+                raise ImportError(f"Cannot load module {module_name} from {path}")
+            mod = importlib.util.module_from_spec(mod_spec)
+            # Define parent directory as package to support relative imports
+            mod.__package__ = parent_package
+            if mod.__name__ not in sys.modules:
+                sys.modules[mod.__name__] = mod  # Add module to current namespace
+            mod_spec.loader.exec_module(mod)  # type: ignore
 
             if mod:
-                module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
+                module_md = generator.module2md(module=mod,
+                                                is_mdx=is_mdx,
+                                                include_toc=include_toc)
                 if stdout_mode:
                     print(module_md)
                 else:
                     to_md_file(
-                        module_md,
-                        module_name,
+                        markdown_str=module_md,
+                        filename=mod.__name__,
                         out_path=output_path,
                         watermark=watermark,
                         is_mdx=is_mdx,
@@ -1330,32 +1596,39 @@ def generate_docs(
                         path=obj.__path__,  # type: ignore
                         prefix=obj.__name__ + ".",  # type: ignore
                     ):
+                        # Add module to ignore list, so submodule will also be ignored
                         if _is_module_ignored(module_name, ignored_modules, private_modules):
-                            # Add module to ignore list, so submodule will also be ignored
-                            ignored_modules.append(module_name)
+                            ignored_modules.add(module_name)
                             continue
 
                         try:
-                            try:
-                                mod_spec = importlib.util.spec_from_loader(module_name, loader)
-                                mod = importlib.util.module_from_spec(mod_spec)
-                                mod_spec.loader.exec_module(mod)
-                            except AttributeError:
-                                mod = get_module(loader, module_name)
-                            module_md = generator.module2md(mod, is_mdx=is_mdx, include_toc=include_toc)
+                            # Modern PEP 451 path
+                            # mod = importlib.import_module(module_name)
+                            mod_spec = importlib.util.find_spec(module_name)
+                            if mod_spec is None or mod_spec.loader is None:
+                                raise ImportError(f"Cannot load module {module_name} from {loader.path}")
+                            mod = importlib.util.module_from_spec(mod_spec)
+                            # Add module to current namespace
+                            if mod.__name__ not in sys.modules:
+                                sys.modules[mod.__name__] = mod
+                            mod_spec.loader.exec_module(mod)
+
+                            module_md = generator.module2md(module=mod,
+                                                            is_mdx=is_mdx,
+                                                            include_toc=include_toc)
 
                             if not module_md:
                                 # Module MD is empty -> ignore module and all submodules
                                 # Add module to ignore list, so submodule will also be ignored
-                                ignored_modules.append(module_name)
+                                ignored_modules.add(module_name)
                                 continue
 
                             if stdout_mode:
                                 print(module_md)
                             else:
                                 to_md_file(
-                                    module_md,
-                                    mod.__name__,
+                                    markdown_str=module_md,
+                                    filename=mod.__name__,
                                     out_path=output_path,
                                     watermark=watermark,
                                     is_mdx=is_mdx
@@ -1366,15 +1639,19 @@ def generate_docs(
                                 + repr(ex)
                             )
                 else:
-                    import_md = generator.import2md(obj, is_mdx=is_mdx)
+                    import_md = generator.import2md(obj, is_mdx=is_mdx, include_toc=include_toc)
                     if stdout_mode:
                         print(import_md)
                     else:
                         to_md_file(
-                            import_md, path, out_path=output_path, watermark=watermark, is_mdx=is_mdx
+                            markdown_str=import_md,
+                            filename=path,
+                            out_path=output_path,
+                            watermark=watermark,
+                            is_mdx=is_mdx
                         )
             else:
-                raise Exception(f"Failed to generate markdown for {path}.")
+                raise Exception(f"Failed to generate markdown. Path `{path}` not recognized.")
 
     if overview_file and not stdout_mode:
         if is_mdx:
@@ -1395,5 +1672,5 @@ def generate_docs(
         # Write mkdocs pages file
         print("Writing mkdocs .pages file.")
         # TODO: generate navigation items to fix problem with naming
-        with open(os.path.join(output_path, ".pages"),  "w", encoding="utf-8", newline="\n") as f:
+        with open(os.path.join(output_path, ".pages"), "w", encoding="utf-8", newline="\n") as f:
             f.write(_MKDOCS_PAGES_TEMPLATE.format(overview_file=overview_file))
