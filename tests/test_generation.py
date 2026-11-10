@@ -64,3 +64,16 @@ class TestClass:
         assert test_module_name in result
         assert f"{test_module_name}.TestClass" in result
         assert "Failed to generate docs for module" not in captured.out
+
+
+def test_is_module_ignored_single_char_private_name() -> None:
+    from lazydocs import generation
+
+    # A single-character private module ("_.py") crashed with IndexError
+    # instead of being ignored like any other private module.
+    assert generation._is_module_ignored("_", []) is True
+    assert generation._is_module_ignored("_", [], private_modules=True) is False
+    # neighboring behavior is unchanged
+    assert generation._is_module_ignored("__init__", []) is False
+    assert generation._is_module_ignored("_private", []) is True
+    assert generation._is_module_ignored("public", []) is False
